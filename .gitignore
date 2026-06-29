@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# CDK
+infrastructure/cdk/dist/
+infrastructure/cdk/cdk.out/
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/.env.*.local
+
+# Build artifacts
+dist/
+build/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets — never commit these
+.env
+secrets.json
+aws-exports.js
+amplify_outputs.json
