@@ -1,68 +1,63 @@
-# AWS Cognito + Google SSO Template
+# AWS Cognito + Google SSO — Expo Template
 
-A production-ready authentication template using **AWS Cognito** with **Google OAuth 2.0** (Single Sign-On), built with Next.js 14 and AWS Amplify v6.
+A production-ready authentication template using **AWS Cognito** with **Google OAuth 2.0** (Single Sign-On), built with **Expo** (React Native) and AWS CDK v2.
 
 ## Features
 
 - Google SSO via AWS Cognito Federated Identity
-- Cognito Hosted UI + custom login page
-- JWT-based session management (ID, Access, Refresh tokens)
-- Protected routes with server-side auth checks
+- Authorization Code + PKCE flow via `expo-auth-session`
+- Tokens stored securely in device keychain (`expo-secure-store`)
+- Automatic token refresh
 - AWS CDK v2 infrastructure-as-code
 - TypeScript throughout
 
-## Architecture Overview
+## OAuth Flow
 
 ```
-User → Next.js App → AWS Amplify v6
-                          ↓
-                   AWS Cognito User Pool
-                          ↓
-                   Google OAuth 2.0 IdP
-                          ↓
-                   Cognito Hosted UI (authorization code flow)
-                          ↓
-                   Tokens issued → stored in browser (HTTP-only cookies)
+User taps "Sign in with Google"
+        ↓
+expo-auth-session opens Cognito Hosted UI in system browser
+        ↓
+Cognito redirects to Google for authentication
+        ↓
+Google returns auth code to Cognito
+        ↓
+Cognito redirects to myapp://callback (deep link)
+        ↓
+OS hands deep link back to the app
+        ↓
+App exchanges code for tokens (ID, Access, Refresh)
+        ↓
+Tokens saved to secure keychain — user is signed in
 ```
-
-**OAuth Flow (Authorization Code + PKCE):**
-1. User clicks "Sign in with Google"
-2. App redirects to Cognito Hosted UI
-3. Cognito redirects to Google for authentication
-4. Google returns to Cognito with auth code
-5. Cognito exchanges code for tokens and redirects to app callback URL
-6. App stores tokens and user is authenticated
 
 ## Project Structure
 
 ```
 aws-cognito/
 ├── docs/
-│   ├── architecture.md          # Detailed architecture diagram
+│   ├── architecture.md          # Component diagram + token lifecycle
 │   ├── setup-google-sso.md      # Step-by-step Google OAuth setup
-│   └── deployment.md            # Deployment guide
+│   └── deployment.md            # Deployment guide (EAS Build + CDK)
 ├── infrastructure/
-│   └── cdk/                     # AWS CDK v2 stack (Cognito resources)
+│   └── cdk/                     # AWS CDK v2 (Cognito User Pool + Google IdP)
 │       ├── bin/app.ts
 │       ├── lib/cognito-stack.ts
 │       ├── package.json
 │       └── tsconfig.json
-├── frontend/                    # Next.js 14 application
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── page.tsx         # Home / protected dashboard
-│   │   │   ├── layout.tsx
-│   │   │   └── auth/callback/page.tsx  # OAuth callback handler
-│   │   ├── components/auth/
-│   │   │   ├── LoginButton.tsx
-│   │   │   └── UserProfile.tsx
-│   │   └── lib/
-│   │       ├── amplify.ts       # Amplify configuration
-│   │       └── auth.ts          # Auth helper utilities
-│   ├── .env.example
-│   ├── next.config.ts
-│   └── package.json
-└── .gitignore
+└── mobile/                      # Expo app
+    ├── app/
+    │   ├── _layout.tsx          # Root layout
+    │   └── index.tsx            # Home screen (auth state)
+    ├── src/
+    │   ├── lib/
+    │   │   ├── cognito.ts       # Discovery doc + redirect URI
+    │   │   └── auth.ts          # Token exchange, storage, parsing
+    │   └── components/
+    │       ├── LoginButton.tsx
+    │       └── UserProfile.tsx
+    ├── app.json                 # Expo config (scheme: "myapp")
+    └── .env.example
 ```
 
 ## Prerequisites
@@ -70,56 +65,68 @@ aws-cognito/
 | Tool | Version | Purpose |
 |------|---------|---------|
 | Node.js | ≥ 20 | Runtime |
+| Expo CLI | latest | `npm i -g expo` |
 | AWS CLI | ≥ 2.x | Deploy infrastructure |
-| AWS CDK | ≥ 2.x | IaC |
+| AWS CDK | ≥ 2.x | `npm i -g aws-cdk` |
 | Google Cloud account | — | OAuth credentials |
 
 ## Quick Start
 
 ### 1. Set up Google OAuth credentials
 
-Follow [`docs/setup-google-sso.md`](docs/setup-google-sso.md) to create a Google OAuth 2.0 Client ID and Secret.
+Follow [`docs/setup-google-sso.md`](docs/setup-google-sso.md).
 
-### 2. Deploy Cognito infrastructure
+### 2. Choose your app name
+
+Edit `infrastructure/cdk/bin/app.ts` and change `appName` to something unique — it becomes your Cognito domain prefix.
+
+Also update the `scheme` in `mobile/app.json` if you change the deep link scheme from `myapp`.
+
+### 3. Deploy Cognito infrastructure
 
 ```bash
 cd infrastructure/cdk
 npm install
-npm run bootstrap   # first time only: cdk bootstrap
+export GOOGLE_CLIENT_ID="..."
+export GOOGLE_CLIENT_SECRET="..."
+npm run bootstrap   # first time only
 npm run deploy
 ```
 
-After deploy, copy the outputs — you'll need `UserPoolId`, `UserPoolClientId`, and `CognitoDomain`.
+Copy the `UserPoolClientId` and `CognitoDomain` from the outputs.
 
-### 3. Configure the frontend
+### 4. Configure the mobile app
 
 ```bash
-cd frontend
-cp .env.example .env.local
-# fill in values from CDK output
+cd mobile
+cp .env.example .env
+# fill in values from CDK outputs
 npm install
-npm run dev
 ```
 
-### 4. Open the app
+### 5. Run
 
-Navigate to `http://localhost:3000` and click **Sign in with Google**.
+```bash
+npm run ios      # iOS Simulator
+npm run android  # Android Emulator
+```
+
+Tap **Sign in with Google** — the system browser opens, you authenticate, and the app receives the tokens via deep link.
 
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| `NEXT_PUBLIC_AWS_REGION` | AWS region (e.g. `us-east-1`) |
-| `NEXT_PUBLIC_USER_POOL_ID` | Cognito User Pool ID |
-| `NEXT_PUBLIC_USER_POOL_CLIENT_ID` | Cognito App Client ID |
-| `NEXT_PUBLIC_COGNITO_DOMAIN` | Cognito Hosted UI domain prefix |
-| `NEXT_PUBLIC_APP_URL` | App base URL (e.g. `http://localhost:3000`) |
+| `EXPO_PUBLIC_AWS_REGION` | AWS region (e.g. `us-east-1`) |
+| `EXPO_PUBLIC_USER_POOL_CLIENT_ID` | Cognito App Client ID (from CDK output) |
+| `EXPO_PUBLIC_COGNITO_DOMAIN` | Cognito domain prefix (e.g. `my-app`) |
+| `EXPO_PUBLIC_APP_SCHEME` | Must match `app.json → expo.scheme` (`myapp`) |
 
 ## Documentation
 
-- [Architecture](docs/architecture.md) — component diagram and token lifecycle
-- [Google SSO Setup](docs/setup-google-sso.md) — full step-by-step guide
-- [Deployment](docs/deployment.md) — production deployment checklist
+- [Architecture](docs/architecture.md)
+- [Google SSO Setup](docs/setup-google-sso.md)
+- [Deployment](docs/deployment.md)
 
 ## License
 

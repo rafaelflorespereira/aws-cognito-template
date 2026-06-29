@@ -13,11 +13,17 @@ new CognitoStack(app, 'CognitoStack', {
   // Pass via env vars — never hardcode secrets
   googleClientId: process.env.GOOGLE_CLIENT_ID!,
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-  // Allowed callback origins (add production URL here)
   callbackUrls: [
-    'http://localhost:3000/auth/callback',
+    // Standalone / EAS build (matches app.json scheme)
+    'myapp://callback',
+    // Expo Go on simulator
+    'exp://localhost:8081',
+    // Expo Go on physical device (replace with your machine's local IP)
+    'exp://192.168.1.100:8081',
   ],
   logoutUrls: [
-    'http://localhost:3000',
+    'myapp://',
+    'exp://localhost:8081',
+    'exp://192.168.1.100:8081',
   ],
 });

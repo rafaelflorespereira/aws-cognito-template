@@ -5,11 +5,11 @@ node_modules/
 infrastructure/cdk/dist/
 infrastructure/cdk/cdk.out/
 
-# Next.js
-frontend/.next/
-frontend/out/
-frontend/.env.local
-frontend/.env.*.local
+# Expo
+mobile/.expo/
+mobile/dist/
+mobile/.env
+mobile/.env.local
 
 # Build artifacts
 dist/

@@ -5,10 +5,8 @@
 ### First-time bootstrap
 
 ```bash
-# Authenticate with AWS
-aws configure  # or use SSO: aws sso login
+aws configure   # or: aws sso login
 
-# Bootstrap CDK (once per account/region)
 cd infrastructure/cdk
 npm install
 npx cdk bootstrap aws://<ACCOUNT_ID>/<REGION>
@@ -23,121 +21,98 @@ export GOOGLE_CLIENT_SECRET="..."
 npx cdk deploy CognitoStack --outputs-file outputs.json
 ```
 
-CDK will print a summary of changes and prompt for confirmation before creating IAM resources.
-
 ### Stack outputs
-
-After deploy, `outputs.json` will contain:
 
 ```json
 {
   "CognitoStack": {
     "UserPoolId": "us-east-1_XXXXXXXXX",
     "UserPoolClientId": "xxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-    "CognitoDomain": "my-app.auth.us-east-1.amazoncognito.com",
-    "HostedUIUrl": "https://my-app.auth.us-east-1.amazoncognito.com/login?..."
+    "CognitoDomain": "my-app.auth.us-east-1.amazoncognito.com"
   }
 }
 ```
 
-Copy these into your frontend `.env.local`.
+Copy `UserPoolClientId` and the domain prefix into `mobile/.env`.
 
 ### Update / destroy
 
 ```bash
-# Update after code changes
-npx cdk deploy CognitoStack
-
-# Tear down all resources
-npx cdk destroy CognitoStack
+npx cdk deploy CognitoStack   # apply changes
+npx cdk destroy CognitoStack  # tear down (deletes all users!)
 ```
-
-> **Warning:** Destroying the stack deletes the User Pool and all user accounts permanently.
 
 ---
 
-## Frontend (Next.js)
+## Mobile App (Expo)
 
 ### Local development
 
 ```bash
-cd frontend
-cp .env.example .env.local
+cd mobile
+cp .env.example .env
 # fill in values from CDK outputs
 npm install
-npm run dev
+npm run ios      # iOS Simulator
+npm run android  # Android Emulator
 ```
 
-App runs at `http://localhost:3000`.
+### Expo Go on a physical device
 
-### Production build
+`expo-auth-session` will generate a redirect URI like `exp://192.168.x.x:8081`.
+You must add your machine's local IP to the Cognito `callbackUrls` in `infrastructure/cdk/bin/app.ts` and re-deploy before testing on a real device.
+
+### Production build (EAS Build)
 
 ```bash
-npm run build
-npm start
+npm install -g eas-cli
+eas login
+eas build:configure
+
+# Build for both platforms
+eas build --platform all
 ```
 
-### Deploy to Vercel (recommended)
+EAS Build uses the `myapp://callback` scheme (standalone app), which is already registered in the Cognito App Client.
+
+Set environment variables in EAS:
 
 ```bash
-npm i -g vercel
-vercel
+eas secret:create --scope project --name EXPO_PUBLIC_AWS_REGION --value us-east-1
+eas secret:create --scope project --name EXPO_PUBLIC_USER_POOL_CLIENT_ID --value <value>
+eas secret:create --scope project --name EXPO_PUBLIC_COGNITO_DOMAIN --value my-app
+eas secret:create --scope project --name EXPO_PUBLIC_APP_SCHEME --value myapp
 ```
-
-Set the environment variables in the Vercel dashboard under **Settings → Environment Variables**.
-
-### Deploy to AWS (Amplify Hosting)
-
-1. Push the `frontend/` directory to a GitHub repo (or the monorepo root)
-2. In the AWS Amplify console, click **New app → Host web app**
-3. Connect your GitHub repo
-4. Set the build settings:
-   ```yaml
-   version: 1
-   frontend:
-     phases:
-       preBuild:
-         commands:
-           - cd frontend && npm install
-       build:
-         commands:
-           - npm run build
-     artifacts:
-       baseDirectory: frontend/.next
-       files:
-         - '**/*'
-     cache:
-       paths:
-         - frontend/node_modules/**/*
-   ```
-5. Add environment variables matching `.env.example`
 
 ---
 
 ## Production Checklist
 
 - [ ] Google OAuth consent screen is **Published** (not Testing)
-- [ ] Cognito App Client `callbackUrls` includes your production domain
-- [ ] Cognito App Client `logoutUrls` includes your production domain
-- [ ] `NEXT_PUBLIC_APP_URL` is set to the production URL
-- [ ] Refresh token rotation is enabled in Cognito App Client settings
-- [ ] MFA policy reviewed (optional but recommended)
-- [ ] Cognito advanced security features reviewed
-- [ ] CloudWatch alarms set for `UserPool` sign-in errors
+- [ ] Cognito `callbackUrls` contains only `myapp://callback` (remove `exp://` URLs)
+- [ ] Cognito `logoutUrls` contains only `myapp://`
+- [ ] `app.json` → `ios.bundleIdentifier` and `android.package` are set to your real identifiers
+- [ ] EAS secrets are configured (not `.env` file)
+- [ ] Token refresh logic is tested (let access token expire and verify silent refresh works)
+- [ ] Refresh token rotation enabled in Cognito App Client
 
 ---
 
 ## Useful AWS CLI Commands
 
 ```bash
-# List user pool clients
-aws cognito-idp list-user-pool-clients --user-pool-id <POOL_ID>
-
 # Describe the app client
 aws cognito-idp describe-user-pool-client \
   --user-pool-id <POOL_ID> \
   --client-id <CLIENT_ID>
 
-# List users
+# List federated users
 aws cognito-idp list-users --user-pool-id <POOL_ID>
+
+# Update callback URLs after changing scheme
+aws cognito-idp update-user-pool-client \
+  --user-pool-id <POOL_ID> \
+  --client-id <CLIENT_ID> \
+  --callback-urls '["myapp://callback"]' \
+  --logout-urls '["myapp://"]'
 ```
