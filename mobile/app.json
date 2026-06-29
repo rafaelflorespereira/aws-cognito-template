@@ -9,10 +9,10 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.myapp.cognitosso"
+      "bundleIdentifier": "com.rafaelflorespereira.cognitosso"
     },
     "android": {
-      "package": "com.myapp.cognitosso",
+      "package": "com.rafaelflorespereira.cognitosso",
       "adaptiveIcon": {
         "backgroundColor": "#ffffff"
       }
