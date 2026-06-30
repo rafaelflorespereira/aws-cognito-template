@@ -1,9 +1,9 @@
-import * as AuthSession from 'expo-auth-session';
+import * as AuthSession from "expo-auth-session";
 
-const region = process.env.EXPO_PUBLIC_AWS_REGION!;
-const domainPrefix = process.env.EXPO_PUBLIC_COGNITO_DOMAIN!;
-const clientId = process.env.EXPO_PUBLIC_USER_POOL_CLIENT_ID!;
-const scheme = process.env.EXPO_PUBLIC_APP_SCHEME!;
+const region = process.env.EXPO_PUBLIC_AWS_REGION;
+const domainPrefix = process.env.EXPO_PUBLIC_COGNITO_DOMAIN;
+const clientId = process.env.EXPO_PUBLIC_USER_POOL_CLIENT_ID ?? "";
+const scheme = "myapp";
 
 const baseUrl = `https://${domainPrefix}.auth.${region}.amazoncognito.com`;
 
@@ -15,7 +15,7 @@ export const discovery: AuthSession.DiscoveryDocument = {
 
 export const cognitoConfig = {
   clientId,
-  scopes: ['openid', 'email', 'profile'],
+  scopes: ["openid", "email", "profile"],
 };
 
 // makeRedirectUri resolves to:
@@ -25,6 +25,6 @@ export const cognitoConfig = {
 export function getRedirectUri() {
   return AuthSession.makeRedirectUri({
     scheme,
-    path: 'callback',
+    path: "callback",
   });
 }

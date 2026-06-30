@@ -1,17 +1,17 @@
-import { useEffect, useState } from 'react';
-import { View, StyleSheet } from 'react-native';
-import * as AuthSession from 'expo-auth-session';
-import * as WebBrowser from 'expo-web-browser';
+import { useEffect, useState } from "react";
+import { View, StyleSheet } from "react-native";
+import * as AuthSession from "expo-auth-session";
+import * as WebBrowser from "expo-web-browser";
 import {
   exchangeCodeForTokens,
   getStoredTokens,
   clearTokens,
   parseIdToken,
   type AuthUser,
-} from '@/lib/auth';
-import { cognitoConfig, discovery, getRedirectUri } from '@/lib/cognito';
-import LoginButton from '@/components/LoginButton';
-import UserProfile from '@/components/UserProfile';
+} from "@/lib/auth";
+import { cognitoConfig, discovery, getRedirectUri } from "@/lib/cognito";
+import LoginButton from "@/components/LoginButton";
+import UserProfile from "@/components/UserProfile";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -29,7 +29,7 @@ export default function HomeScreen() {
       responseType: AuthSession.ResponseType.Code,
       codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
     },
-    discovery
+    discovery,
   );
 
   // Restore session on mount
@@ -43,7 +43,7 @@ export default function HomeScreen() {
 
   // Handle OAuth response
   useEffect(() => {
-    if (response?.type !== 'success' || !request?.codeVerifier) return;
+    if (response?.type !== "success" || !request?.codeVerifier) return;
     const { code } = response.params;
     exchangeCodeForTokens(code, request.codeVerifier)
       .then((tokens) => setUser(parseIdToken(tokens.idToken)))
@@ -71,9 +71,9 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f8fafc",
     padding: 24,
   },
 });

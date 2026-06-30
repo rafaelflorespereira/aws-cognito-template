@@ -1,6 +1,6 @@
 # AWS Cognito + Google SSO — Expo Template
 
-A production-ready authentication template using **AWS Cognito** with **Google OAuth 2.0** (Single Sign-On), built with **Expo** (React Native) and AWS CDK v2.
+A production-ready authentication template using **AWS Cognito** with **Google OAuth 2.0** (Single Sign-On), built with **Expo** (React Native). The Cognito User Pool is configured directly in the **AWS Console**.
 
 ## Features
 
@@ -8,7 +8,6 @@ A production-ready authentication template using **AWS Cognito** with **Google O
 - Authorization Code + PKCE flow via `expo-auth-session`
 - Tokens stored securely in device keychain (`expo-secure-store`)
 - Automatic token refresh
-- AWS CDK v2 infrastructure-as-code
 - TypeScript throughout
 
 ## OAuth Flow
@@ -38,13 +37,7 @@ aws-cognito/
 ├── docs/
 │   ├── architecture.md          # Component diagram + token lifecycle
 │   ├── setup-google-sso.md      # Step-by-step Google OAuth setup
-│   └── deployment.md            # Deployment guide (EAS Build + CDK)
-├── infrastructure/
-│   └── cdk/                     # AWS CDK v2 (Cognito User Pool + Google IdP)
-│       ├── bin/app.ts
-│       ├── lib/cognito-stack.ts
-│       ├── package.json
-│       └── tsconfig.json
+│   └── deployment.md            # Cognito console setup + EAS Build guide
 └── mobile/                      # Expo app
     ├── app/
     │   ├── _layout.tsx          # Root layout
@@ -62,49 +55,51 @@ aws-cognito/
 
 ## Prerequisites
 
-| Tool | Version | Purpose |
-|------|---------|---------|
-| Node.js | ≥ 20 | Runtime |
-| Expo CLI | latest | `npm i -g expo` |
-| AWS CLI | ≥ 2.x | Deploy infrastructure |
-| AWS CDK | ≥ 2.x | `npm i -g aws-cdk` |
-| Google Cloud account | — | OAuth credentials |
+| Tool                 | Version | Purpose                     |
+| -------------------- | ------- | --------------------------- |
+| Node.js              | ≥ 20    | Runtime                     |
+| Expo CLI             | latest  | `npm i -g expo`             |
+| AWS account          | —       | Cognito User Pool (console) |
+| Google Cloud account | —       | OAuth credentials           |
 
 ## Quick Start
 
 ### 1. Set up Google OAuth credentials
 
-Follow [`docs/setup-google-sso.md`](docs/setup-google-sso.md).
+Follow [`docs/setup-google-sso.md`](docs/setup-google-sso.md) to create an OAuth 2.0 Client ID and secret in Google Cloud Console.
 
-### 2. Choose your app name
+### 2. Create the Cognito User Pool (AWS Console)
 
-Edit `infrastructure/cdk/bin/app.ts` and change `appName` to something unique — it becomes your Cognito domain prefix.
+In the [Cognito console](https://console.aws.amazon.com/cognito):
 
-Also update the `scheme` in `mobile/app.json` if you change the deep link scheme from `myapp`.
+1. **Create a User Pool** (sign-in with email).
+2. **Add a Cognito domain** (App integration → Domain). Note the prefix, e.g. `us-east-1gdcgzpb1p`.
+3. **Add Google as an identity provider** (Sign-in experience → Federated identity provider sign-in):
+   - Client ID / secret from Google Cloud Console
+   - Scopes: `openid email profile`
+   - Attribute mapping: email → email, name → name, picture → picture
+4. **Create a public App Client** (App integration → App clients):
+   - Type: **Public client** (no client secret — PKCE)
+   - Auth flow: authorization code grant
+   - OAuth scopes: `openid`, `email`, `profile`
+   - Identity providers: enable **Google**
+   - Callback URLs: `myapp://callback`, `exp://localhost:8081`, `exp://<your-ip>:8081`
+   - Sign-out URLs: `myapp://`, `exp://localhost:8081`
+5. In **Google Cloud Console**, add the redirect URI:
+   `https://<your-domain-prefix>.auth.<region>.amazoncognito.com/oauth2/idpresponse`
 
-### 3. Deploy Cognito infrastructure
+Note the **App Client ID** and **domain prefix** — you'll need them next.
 
-```bash
-cd infrastructure/cdk
-npm install
-export GOOGLE_CLIENT_ID="..."
-export GOOGLE_CLIENT_SECRET="..."
-npm run bootstrap   # first time only
-npm run deploy
-```
-
-Copy the `UserPoolClientId` and `CognitoDomain` from the outputs.
-
-### 4. Configure the mobile app
+### 3. Configure the mobile app
 
 ```bash
 cd mobile
 cp .env.example .env
-# fill in values from CDK outputs
+# fill in the App Client ID and domain prefix from the console
 npm install
 ```
 
-### 5. Run
+### 4. Run
 
 ```bash
 npm run ios      # iOS Simulator
@@ -115,12 +110,14 @@ Tap **Sign in with Google** — the system browser opens, you authenticate, and 
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `EXPO_PUBLIC_AWS_REGION` | AWS region (e.g. `us-east-1`) |
-| `EXPO_PUBLIC_USER_POOL_CLIENT_ID` | Cognito App Client ID (from CDK output) |
-| `EXPO_PUBLIC_COGNITO_DOMAIN` | Cognito domain prefix (e.g. `my-app`) |
-| `EXPO_PUBLIC_APP_SCHEME` | Must match `app.json → expo.scheme` (`myapp`) |
+All `EXPO_PUBLIC_*` values are inlined into the app bundle at build time. They are **public, not secrets** — the App Client is a public PKCE client with no secret.
+
+| Variable                          | Description                                           |
+| --------------------------------- | ----------------------------------------------------- |
+| `EXPO_PUBLIC_AWS_REGION`          | AWS region (e.g. `us-east-1`)                         |
+| `EXPO_PUBLIC_USER_POOL_CLIENT_ID` | Cognito App Client ID (App integration tab)           |
+| `EXPO_PUBLIC_COGNITO_DOMAIN`      | Cognito domain **prefix** (e.g. `us-east-1gdcgzpb1p`) |
+| `EXPO_PUBLIC_APP_SCHEME`          | Must match `app.json → expo.scheme` (`myapp`)         |
 
 ## Documentation
 

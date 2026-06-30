@@ -74,33 +74,33 @@ App                  System Browser       Cognito Hosted UI    Google
 
 ## Token Lifecycle
 
-| Token | TTL | Storage | Usage |
-|-------|-----|---------|-------|
-| ID Token (JWT) | 1 hour | `expo-secure-store` | User identity (email, name, picture) |
-| Access Token (JWT) | 1 hour | `expo-secure-store` | Call protected APIs |
-| Refresh Token | 30 days | `expo-secure-store` | Renew ID + Access tokens |
+| Token              | TTL     | Storage             | Usage                                |
+| ------------------ | ------- | ------------------- | ------------------------------------ |
+| ID Token (JWT)     | 1 hour  | `expo-secure-store` | User identity (email, name, picture) |
+| Access Token (JWT) | 1 hour  | `expo-secure-store` | Call protected APIs                  |
+| Refresh Token      | 30 days | `expo-secure-store` | Renew ID + Access tokens             |
 
 Call `refreshAccessToken()` from `src/lib/auth.ts` before the Access Token expires.
 
 ## Redirect URI by Environment
 
-| Environment | Redirect URI |
-|-------------|-------------|
-| iOS Simulator (Expo Go) | `exp://localhost:8081` |
-| Android Emulator (Expo Go) | `exp://10.0.2.2:8081` |
-| Physical device (Expo Go) | `exp://<your-machine-ip>:8081` |
-| Standalone / EAS Build | `myapp://callback` |
+| Environment                | Redirect URI                   |
+| -------------------------- | ------------------------------ |
+| iOS Simulator (Expo Go)    | `exp://localhost:8081`         |
+| Android Emulator (Expo Go) | `exp://10.0.2.2:8081`          |
+| Physical device (Expo Go)  | `exp://<your-machine-ip>:8081` |
+| Standalone / EAS Build     | `myapp://callback`             |
 
 `expo-auth-session`'s `makeRedirectUri()` resolves the correct URI at runtime automatically.
 
-## CDK Stack Resources
+## Cognito Resources (configured in the AWS Console)
 
-| Resource | Purpose |
-|----------|---------|
-| `CognitoUserPool` | User directory |
-| `CognitoUserPoolDomain` | Hosted UI domain |
-| `UserPoolIdentityProviderGoogle` | Google federation |
-| `UserPoolClient` | Public OAuth client (no secret, PKCE) |
+| Resource                 | Purpose                               |
+| ------------------------ | ------------------------------------- |
+| User Pool                | User directory                        |
+| Cognito domain           | Hosted UI domain                      |
+| Google identity provider | Google federation                     |
+| App Client               | Public OAuth client (no secret, PKCE) |
 
 ## Security Notes
 

@@ -43,51 +43,52 @@ This guide walks through creating the Google OAuth 2.0 credentials required by t
    https://<cognito-domain>.auth.<region>.amazoncognito.com/oauth2/idpresponse
    ```
 
-   Replace `<cognito-domain>` and `<region>` with your CDK stack outputs.
+   Replace `<cognito-domain>` and `<region>` with your Cognito domain prefix and region (from the Cognito console → App integration → Domain).
 
 6. Click **Create**
-7. **Copy** the `Client ID` and `Client Secret` — you'll need them for the CDK stack.
+7. **Copy** the `Client ID` and `Client Secret` — you'll need them when adding Google as an identity provider in Cognito.
 
-## Step 5 — Pass Credentials to CDK
+## Step 5 — Add Google to the Cognito User Pool
 
-Set environment variables before deploying (never commit these):
+In the Cognito console → your user pool → **Sign-in experience** → **Federated
+identity provider sign-in** → **Add identity provider** → **Google**:
 
-```bash
-export GOOGLE_CLIENT_ID="your-client-id.apps.googleusercontent.com"
-export GOOGLE_CLIENT_SECRET="your-client-secret"
+- **App client ID / App client secret**: paste the Google `Client ID` and `Client Secret`
+- **Authorized scopes**: `openid email profile`
+- Save
 
-cd infrastructure/cdk
-npm run deploy
-```
-
-Alternatively, store them in **AWS Secrets Manager** or **AWS SSM Parameter Store** and read them in the CDK stack. See `infrastructure/cdk/lib/cognito-stack.ts` for the injection point.
+The Google client secret is stored inside Cognito — it never goes into the mobile
+app or the repo.
 
 ## Step 6 — Register Callback URLs in Cognito
 
-After deploying the CDK stack, the App Client callback URLs are automatically configured. For local development they include:
+In the user pool → **App integration** → your **App client** → edit **Hosted UI**
+/ **Login pages**, set the callback URLs. For local development:
 
-- `http://localhost:3000/auth/callback`
+- `myapp://callback`
+- `exp://localhost:8081`
+- `exp://<your-machine-ip>:8081`
 
-For production, add your domain in `infrastructure/cdk/lib/cognito-stack.ts` under `callbackUrls`.
+For production, restrict the callback URLs to only `myapp://callback`.
 
 ## Attribute Mapping
 
 Cognito maps Google profile attributes to user pool attributes:
 
 | Google claim | Cognito attribute |
-|--------------|------------------|
-| `sub` | `username` |
-| `email` | `email` |
-| `name` | `name` |
-| `picture` | `picture` |
+| ------------ | ----------------- |
+| `sub`        | `username`        |
+| `email`      | `email`           |
+| `name`       | `name`            |
+| `picture`    | `picture`         |
 
-These mappings are defined in the CDK stack (`GoogleIdP` construct).
+These mappings are defined when you add the Google identity provider in the Cognito console (Attribute mapping section).
 
 ## Troubleshooting
 
-| Issue | Fix |
-|-------|-----|
-| `redirect_uri_mismatch` | The URI in Google Console must exactly match the Cognito idpresponse URL |
-| User sees "App is not verified" | Add them as a test user in Google Console, or publish the app |
-| `invalid_grant` | PKCE code verifier mismatch — ensure Amplify is configured with `responseType: 'code'` |
-| Attributes not mapped | Check attribute mappings in the User Pool Identity Provider settings |
+| Issue                           | Fix                                                                                    |
+| ------------------------------- | -------------------------------------------------------------------------------------- |
+| `redirect_uri_mismatch`         | The URI in Google Console must exactly match the Cognito idpresponse URL               |
+| User sees "App is not verified" | Add them as a test user in Google Console, or publish the app                          |
+| `invalid_grant`                 | PKCE code verifier mismatch — ensure Amplify is configured with `responseType: 'code'` |
+| Attributes not mapped           | Check attribute mappings in the User Pool Identity Provider settings                   |
