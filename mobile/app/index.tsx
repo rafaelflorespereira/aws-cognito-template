@@ -43,11 +43,27 @@ export default function HomeScreen() {
 
   // Handle OAuth response
   useEffect(() => {
-    if (response?.type !== "success" || !request?.codeVerifier) return;
+    if (!response) return;
+    if (response.type === "error") {
+      console.error("[auth] authorization error:", response.error, response.params);
+      return;
+    }
+    if (response.type !== "success") {
+      console.log("[auth] authorization response:", response.type);
+      return;
+    }
+    if (!request?.codeVerifier) {
+      console.error("[auth] missing codeVerifier on success response");
+      return;
+    }
     const { code } = response.params;
+    console.log("[auth] exchanging code for tokens...");
     exchangeCodeForTokens(code, request.codeVerifier)
-      .then((tokens) => setUser(parseIdToken(tokens.idToken)))
-      .catch(console.error);
+      .then((tokens) => {
+        console.log("[auth] token exchange succeeded");
+        setUser(parseIdToken(tokens.idToken));
+      })
+      .catch((err) => console.error("[auth] token exchange failed:", err));
   }, [response]);
 
   async function handleSignOut() {
@@ -62,7 +78,13 @@ export default function HomeScreen() {
       {user ? (
         <UserProfile user={user} onSignOut={handleSignOut} />
       ) : (
-        <LoginButton disabled={!request} onPress={() => promptAsync()} />
+        <LoginButton
+          disabled={!request}
+          onPress={() => {
+            console.log("[auth] redirectUri:", redirectUri);
+            promptAsync().catch((err) => console.error("[auth] promptAsync failed:", err));
+          }}
+        />
       )}
     </View>
   );
