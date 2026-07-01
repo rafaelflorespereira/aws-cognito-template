@@ -28,6 +28,9 @@ export default function HomeScreen() {
       redirectUri,
       responseType: AuthSession.ResponseType.Code,
       codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
+      // Skips the Hosted UI's identity-provider picker and sends the user
+      // straight to Google, since that's the only sign-in option this button offers.
+      extraParams: { identity_provider: "Google" },
     },
     discovery,
   );
@@ -82,6 +85,7 @@ export default function HomeScreen() {
           disabled={!request}
           onPress={() => {
             console.log("[auth] redirectUri:", redirectUri);
+            console.log("[auth] authorize url:", request?.url);
             promptAsync().catch((err) => console.error("[auth] promptAsync failed:", err));
           }}
         />

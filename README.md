@@ -70,23 +70,11 @@ Follow [`docs/setup-google-sso.md`](docs/setup-google-sso.md) to create an OAuth
 
 ### 2. Create the Cognito User Pool (AWS Console)
 
-In the [Cognito console](https://console.aws.amazon.com/cognito):
-
-1. **Create a User Pool** (sign-in with email).
-2. **Add a Cognito domain** (App integration → Domain). Note the prefix, e.g. `us-east-1gdcgzpb1p`.
-3. **Add Google as an identity provider** (Sign-in experience → Federated identity provider sign-in):
-   - Client ID / secret from Google Cloud Console
-   - Scopes: `openid email profile`
-   - Attribute mapping: email → email, name → name, picture → picture
-4. **Create a public App Client** (App integration → App clients):
-   - Type: **Public client** (no client secret — PKCE)
-   - Auth flow: authorization code grant
-   - OAuth scopes: `openid`, `email`, `profile`
-   - Identity providers: enable **Google**
-   - Callback URLs: `myapp://callback`, `exp://localhost:8081`, `exp://<your-ip>:8081`
-   - Sign-out URLs: `myapp://`, `exp://localhost:8081`
-5. In **Google Cloud Console**, add the redirect URI:
-   `https://<your-domain-prefix>.auth.<region>.amazoncognito.com/oauth2/idpresponse`
+Follow [`docs/deployment.md`](docs/deployment.md#cognito-user-pool-aws-console) —
+it covers pool creation, sign-up verification, Managed Login branding, the
+App Client, and a troubleshooting table for the errors you're most likely to
+hit along the way (several settings are fixed at creation time, so it's
+worth reading before you start).
 
 Note the **App Client ID** and **domain prefix** — you'll need them next.
 
