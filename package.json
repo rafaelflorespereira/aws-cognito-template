@@ -1,0 +1,14 @@
+{
+  "name": "aws-cognito-template",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "mobile",
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "vs": "npm run start --workspace vs-helper",
+    "type-check": "npm run type-check --workspaces --if-present"
+  }
+}

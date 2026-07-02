@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Vibrational State",
+    "slug": "vs-helper",
+    "scheme": "vshelper",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "platforms": ["ios", "android"],
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rafaelflorespereira.vshelper"
+    },
+    "android": {
+      "package": "com.rafaelflorespereira.vshelper",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f172a"
+      }
+    },
+    "plugins": ["expo-router", "expo-secure-store", "expo-notifications"]
+  }
+}

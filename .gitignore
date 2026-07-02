@@ -1,11 +1,11 @@
 # Dependencies
 node_modules/
 
-# Expo
-mobile/.expo/
-mobile/dist/
-mobile/.env
-mobile/.env.local
+# Expo (monorepo-wide)
+**/.expo/
+**/dist/
+**/.env
+**/.env.local
 
 # Build artifacts
 dist/

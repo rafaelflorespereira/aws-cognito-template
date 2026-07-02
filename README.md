@@ -93,6 +93,7 @@ All `EXPO_PUBLIC_*` values are inlined into the app bundle at build time. They a
 
 - [Architecture](docs/architecture.md)
 - [Setup & Deployment](docs/deployment.md)
+- [Vibrational State (VS) Helper — Architecture](docs/vs-helper-architecture.md)
 
 ## License
 
