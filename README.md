@@ -36,8 +36,7 @@ Tokens saved to secure keychain — user is signed in
 aws-cognito/
 ├── docs/
 │   ├── architecture.md          # Component diagram + token lifecycle
-│   ├── setup-google-sso.md      # Step-by-step Google OAuth setup
-│   └── deployment.md            # Cognito console setup + EAS Build guide
+│   └── deployment.md            # Full setup: Cognito + Google SSO + EAS Build
 └── mobile/                      # Expo app
     ├── app/
     │   ├── _layout.tsx          # Root layout
@@ -64,32 +63,15 @@ aws-cognito/
 
 ## Quick Start
 
-### 1. Set up Google OAuth credentials
-
-Follow [`docs/setup-google-sso.md`](docs/setup-google-sso.md) to create an OAuth 2.0 Client ID and secret in Google Cloud Console.
-
-### 2. Create the Cognito User Pool (AWS Console)
-
-Follow [`docs/deployment.md`](docs/deployment.md#cognito-user-pool-aws-console) —
-it covers pool creation, sign-up verification, Managed Login branding, the
-App Client, and a troubleshooting table for the errors you're most likely to
-hit along the way (several settings are fixed at creation time, so it's
-worth reading before you start).
-
-Note the **App Client ID** and **domain prefix** — you'll need them next.
-
-### 3. Configure the mobile app
+Follow [`docs/deployment.md`](docs/deployment.md) — a single step-by-step guide
+covering the Cognito User Pool, Google OAuth credentials, the App Client, the
+mobile `.env`, and EAS Build.
 
 ```bash
 cd mobile
 cp .env.example .env
-# fill in the App Client ID and domain prefix from the console
+# fill in the issuer and App Client ID from the console (OIDC properties)
 npm install
-```
-
-### 4. Run
-
-```bash
 npm run ios      # iOS Simulator
 npm run android  # Android Emulator
 ```
@@ -100,18 +82,17 @@ Tap **Sign in with Google** — the system browser opens, you authenticate, and 
 
 All `EXPO_PUBLIC_*` values are inlined into the app bundle at build time. They are **public, not secrets** — the App Client is a public PKCE client with no secret.
 
-| Variable                          | Description                                           |
-| --------------------------------- | ----------------------------------------------------- |
-| `EXPO_PUBLIC_AWS_REGION`          | AWS region (e.g. `us-east-1`)                         |
-| `EXPO_PUBLIC_USER_POOL_CLIENT_ID` | Cognito App Client ID (App integration tab)           |
-| `EXPO_PUBLIC_COGNITO_DOMAIN`      | Cognito domain **prefix** (e.g. `us-east-1gdcgzpb1p`) |
-| `EXPO_PUBLIC_APP_SCHEME`          | Must match `app.json → expo.scheme` (`myapp`)         |
+| Variable                          | Description                                                           |
+| --------------------------------- | --------------------------------------------------------------------- |
+| `EXPO_PUBLIC_COGNITO_ISSUER`      | OIDC issuer `https://cognito-idp.<region>.amazonaws.com/<userPoolId>` |
+| `EXPO_PUBLIC_USER_POOL_CLIENT_ID` | Cognito App Client ID (App integration tab)                           |
+| `EXPO_PUBLIC_LOGOUT_URI`          | Optional hosted-UI sign-out URL (e.g. `myapp://`)                     |
+| `EXPO_PUBLIC_APP_SCHEME`          | Must match `app.json → expo.scheme` (`myapp`)                         |
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
-- [Google SSO Setup](docs/setup-google-sso.md)
-- [Deployment](docs/deployment.md)
+- [Setup & Deployment](docs/deployment.md)
 
 ## License
 

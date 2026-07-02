@@ -1,11 +1,11 @@
-import * as AuthSession from 'expo-auth-session';
-import * as SecureStore from 'expo-secure-store';
-import { cognitoConfig, discovery, getRedirectUri } from './cognito';
+import * as AuthSession from "expo-auth-session";
+import * as SecureStore from "expo-secure-store";
+import { cognitoConfig, getDiscovery, getRedirectUri } from "./cognito";
 
 const KEYS = {
-  idToken: 'auth.id_token',
-  accessToken: 'auth.access_token',
-  refreshToken: 'auth.refresh_token',
+  idToken: "auth.id_token",
+  accessToken: "auth.access_token",
+  refreshToken: "auth.refresh_token",
 };
 
 export interface AuthTokens {
@@ -23,9 +23,10 @@ export interface AuthUser {
 
 export async function exchangeCodeForTokens(
   code: string,
-  codeVerifier: string
+  codeVerifier: string,
 ): Promise<AuthTokens> {
   const redirectUri = getRedirectUri();
+  const discovery = await getDiscovery();
   const result = await AuthSession.exchangeCodeAsync(
     {
       clientId: cognitoConfig.clientId,
@@ -33,7 +34,7 @@ export async function exchangeCodeForTokens(
       redirectUri,
       extraParams: { code_verifier: codeVerifier },
     },
-    discovery
+    discovery,
   );
 
   const tokens: AuthTokens = {
@@ -46,11 +47,14 @@ export async function exchangeCodeForTokens(
   return tokens;
 }
 
-export async function refreshAccessToken(refreshToken: string): Promise<AuthTokens | null> {
+export async function refreshAccessToken(
+  refreshToken: string,
+): Promise<AuthTokens | null> {
   try {
+    const discovery = await getDiscovery();
     const result = await AuthSession.refreshAsync(
       { clientId: cognitoConfig.clientId, refreshToken },
-      discovery
+      discovery,
     );
     const tokens: AuthTokens = {
       idToken: result.idToken!,
@@ -76,11 +80,13 @@ export async function getStoredTokens(): Promise<AuthTokens | null> {
 }
 
 export async function clearTokens(): Promise<void> {
-  await Promise.all(Object.values(KEYS).map((k) => SecureStore.deleteItemAsync(k)));
+  await Promise.all(
+    Object.values(KEYS).map((k) => SecureStore.deleteItemAsync(k)),
+  );
 }
 
 export function parseIdToken(idToken: string): AuthUser {
-  const payload = idToken.split('.')[1];
+  const payload = idToken.split(".")[1];
   const decoded = JSON.parse(atob(payload));
   return {
     sub: decoded.sub,

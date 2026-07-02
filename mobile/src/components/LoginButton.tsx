@@ -1,4 +1,10 @@
-import { TouchableOpacity, Text, View, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  TouchableOpacity,
+  Text,
+  View,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 
 interface Props {
   onPress: () => void;
@@ -28,41 +34,41 @@ export default function LoginButton({ onPress, disabled }: Props) {
 
 const styles = StyleSheet.create({
   wrapper: {
-    alignItems: 'center',
+    alignItems: "center",
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 16,
     padding: 32,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 4,
-    width: '100%',
+    width: "100%",
     maxWidth: 360,
   },
   title: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1e293b',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#1e293b",
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 14,
-    color: '#64748b',
+    color: "#64748b",
     marginBottom: 8,
   },
   button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: "#d1d5db",
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 20,
-    backgroundColor: '#fff',
-    width: '100%',
+    backgroundColor: "#fff",
+    width: "100%",
     minHeight: 48,
   },
   buttonDisabled: {
@@ -70,7 +76,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#374151',
+    fontWeight: "500",
+    color: "#374151",
   },
 });

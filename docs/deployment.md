@@ -1,168 +1,185 @@
-# Deployment Guide
+# Setup & Deployment Guide
 
-## Cognito User Pool (AWS Console)
+End-to-end steps to create the Cognito User Pool, wire up Google SSO, and ship
+the Expo app. Follow them in order.
 
-The User Pool is configured manually in the AWS Console. Once it exists, the
-mobile app only needs the **App Client ID** and **domain prefix**.
+> Sign-in identifiers and required attributes are **fixed at pool creation** —
+> get step 1 right or recreate the pool.
 
-> **Read this first:** a handful of settings are **fixed at creation time and
-> cannot be edited afterward** — sign-in identifiers and required attributes
-> are the two that bite most often. Get step 1 right the first time, or
-> you'll end up recreating the pool.
+## 1. Create the Cognito User Pool
 
-### One-time setup
+Cognito console → **Set up resources for your application**:
 
-1. **Create a User Pool** — Cognito console → Create user pool:
-   - **Cognito user pool sign-in options**: check **Email** only. Leave
-     "Username" and "Phone number" unchecked unless you specifically want
-     them — this cannot be changed later.
-   - **Required attributes**: leave at the minimum you actually need
-     (typically just `email`). Don't mark `phone_number` or
-     `preferred_username` as required unless you want them on the sign-up
-     form — this is also immutable after creation.
-2. **Configure sign-up verification** — Authentication methods → Sign-up →
-   Cognito-assisted verification and confirmation → Edit: check **Email**.
-   Leave SMS unchecked unless you've deliberately set up SNS for it (new AWS
-   accounts start in the SNS sandbox, which only delivers to pre-verified
-   numbers — not worth it for dev/test). At least one delivery method must
-   be checked, or sign-up fails with "User pool not configured properly for
-   confirmation code delivery."
-3. **Add a Cognito domain** — App integration → Domain → "Use a Cognito domain".
-   Note the prefix, e.g. `us-east-1gdcgzpb1p`.
-4. **Create a Managed Login branding style** — Branding → Managed login →
-   create a style (defaults are fine for dev/test). New pools default to
-   Managed Login, which requires a style to be assigned before the Hosted UI
-   will render — otherwise the app client shows **Status: Unavailable** and
-   users get "Login pages unavailable." You'll assign it to the app client
-   in step 6.
-5. **Add Google as an identity provider** — Sign-in experience → Federated
-   identity provider sign-in → Google:
-   - Client ID / secret from Google Cloud Console
-   - Authorized scopes: `openid email profile`
-   - Attribute mapping: `email → email`, `name → name`, `picture → picture`
-6. **Create a public App Client** — App integration → App clients:
-   - Type: **Public client** (no secret — uses PKCE)
-   - Authentication flow: authorization code grant
-   - OAuth scopes: `openid`, `email`, `profile`
-   - Enabled identity providers: **Cognito user pool** and **Google**
-   - Callback URLs: `myapp://callback`, `exp://localhost:8081/--/callback`,
-     `exp://<your-ip>:8081/--/callback`
-   - Sign-out URLs: `myapp://`, `exp://localhost:8081/--/callback`
-   - Under **Managed login pages configuration**, assign the branding style
-     from step 4.
+- **Application type**: Mobile app
+- **Name**: e.g. `aws-cognito-mobile`
+- **Sign-in identifiers**: Email only
+- **Social/SAML/OIDC sign-in**: click the link, choose **Google**
+- **Self-registration**: disabled
+- **Required attributes**: `email` (and optionally `name`)
+- **Return URL**: `myapp://callback`
 
-   > Expo Go **owns the `exp://` scheme**, not your app's custom scheme —
-   > `expo-auth-session`'s `makeRedirectUri()` falls back to `exp://` (with
-   > an inserted `/--/` path segment) when running inside Expo Go, ignoring
-   > whatever `scheme` you pass in. `myapp://callback` only applies to
-   > standalone/dev-client builds. Check the app's console log (it logs the
-   > resolved `redirectUri` before calling `promptAsync()`) to get the exact
-   > value to register instead of guessing.
-7. **Register the redirect URI in Google** — Google Cloud Console → your OAuth
-   client → Authorized redirect URIs:
-   ```
-   https://<your-domain-prefix>.auth.<region>.amazoncognito.com/oauth2/idpresponse
-   ```
+## 2. Configure sign-up verification
 
-### Troubleshooting
+Authentication methods → Sign-up → Cognito-assisted verification → Edit → check
+**Email** (at least one delivery method is required). Leave SMS off.
 
-| Symptom                                                                   | Cause                                                                                                    | Fix                                                                                                   |
-| -------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Google auth screen never appears, nothing visibly happens                | Google not enabled as an identity provider on the app client                                             | Step 5 — add Google at the pool level, then check it under the app client's Identity providers         |
-| Save fails when adding a callback URL like `expo://localhost:8081`       | Wrong scheme — Expo Go uses `exp://`, not `expo://`, and needs the `/--/callback` path suffix             | Register the exact value logged by the app: `exp://localhost:8081/--/callback`                        |
-| "An error was encountered with the requested page" on the Hosted UI      | `redirect_uri` not in Allowed callback URLs, or `client_id` is malformed (e.g. an Identity Pool ID)      | Verify callback URL list and that `EXPO_PUBLIC_USER_POOL_CLIENT_ID` is the App Client ID               |
-| "Login pages unavailable"                                                | No Managed Login branding style assigned to the app client (Status: Unavailable)                         | Step 4 — create and assign a style                                                                     |
-| Login page asks for "Username" even though pool is email-based           | Cosmetic — Hosted UI/Managed Login keeps the generic "Username" label regardless of sign-in identifier   | Enter the email anyway; it authenticates correctly                                                     |
-| "Invalid input: incorrect username or password"                          | No user exists yet with that email                                                                       | Sign up via the Hosted UI's "Sign up" link, or create a user manually under **Users** in the console    |
-| SMS verification code never arrives                                      | New AWS accounts start in the SNS SMS sandbox, which only delivers to pre-verified numbers                | Either verify the number in the SNS sandbox, or (simpler) disable SMS verification per step 2           |
-| "User pool not configured properly for confirmation code delivery"       | No verification delivery method is enabled at all (e.g. SMS disabled and email never enabled)             | Step 2 — ensure at least Email is checked under Cognito-assisted verification and confirmation          |
-| Need to remove `preferred_username`/`phone_number` from the sign-up form | These are required attributes set at pool creation and can't be edited afterward                          | Recreate the pool with only the required attributes you actually want (step 1)                          |
+## 3. Add a Cognito domain
 
-### Values to copy into `mobile/.env`
+App integration → Domain → **Use a Cognito domain**. Note the prefix
+(e.g. `us-east-1gdcgzpb1p`).
 
-| Console location                    | `.env` variable                   |
-| ----------------------------------- | --------------------------------- |
-| App client ID (App integration tab) | `EXPO_PUBLIC_USER_POOL_CLIENT_ID` |
-| Domain prefix (Domain section)      | `EXPO_PUBLIC_COGNITO_DOMAIN`      |
-| Pool region                         | `EXPO_PUBLIC_AWS_REGION`          |
+## 4. Create a Managed Login branding style
 
----
+Branding → Managed login → create a style (defaults are fine). Required or the
+Hosted UI shows "Login pages unavailable".
 
-## Mobile App (Expo)
+## 5. Create a Google Cloud project
 
-### Local development
+[Google Cloud Console](https://console.cloud.google.com/) → **Select a project**
+→ **New Project** → name it → **Create**.
+
+## 6. Enable the Google People API
+
+APIs & Services → Library → search **Google People API** → **Enable**.
+
+## 7. Configure the OAuth consent screen
+
+APIs & Services → OAuth consent screen:
+
+- User type: **External**
+- App name, user support email, developer contact email
+- Scopes: `openid`, `email`, `profile`
+
+> In Testing mode only listed test users can sign in. Publish for production.
+
+## 8. Create Google OAuth credentials
+
+APIs & Services → Credentials → **Create Credentials → OAuth 2.0 Client IDs**:
+
+- Application type: **Web application**
+- **Authorized JavaScript origins**: leave empty
+- **Authorized redirect URIs** → **Add URI** → paste your Cognito
+  `/oauth2/idpresponse` endpoint (this is required — skipping it causes
+  `redirect_uri_mismatch`):
+
+  ```
+  https://<domain-prefix>.auth.<region>.amazoncognito.com/oauth2/idpresponse
+  ```
+
+  Use the domain from step 3, all lowercase. Example:
+
+  ```
+  https://us-east-1abcd1234xy.auth.us-east-1.amazoncognito.com/oauth2/idpresponse
+  ```
+
+- **Create**, then copy the **Client ID** and **Client Secret**.
+
+> This URI must match Cognito's domain **exactly** (scheme, host, `/oauth2/idpresponse`,
+> no trailing slash). Changes can take a few minutes to propagate on Google's side.
+
+Sign-in experience → Federated identity provider sign-in → **Google**:
+
+- App client ID / secret: the Google Client ID / Secret from step 8
+- Authorized scopes: `openid email profile`
+- Attribute mapping: `email → email`, `name → name`, `picture → picture`
+
+## 10. Create a public App Client
+
+App integration → App clients:
+
+- Type: **Public client** (no secret — uses PKCE)
+- Auth flow: authorization code grant
+- OAuth scopes: `openid`, `email`, `profile`
+- Enabled identity providers: **Cognito user pool** and **Google**
+- Callback URLs: `myapp://callback`, `exp://localhost:8081/--/callback`,
+  `exp://<your-ip>:8081/--/callback`
+- Sign-out URLs: `myapp://`, `exp://localhost:8081/--/callback`
+- Managed login pages configuration: assign the branding style from step 4
+
+> Inside Expo Go the redirect is `exp://…/--/callback`, not `myapp://callback`.
+> The app logs the resolved `redirectUri` before `promptAsync()` — register that
+> exact value.
+
+## 11. Configure the mobile app
+
+Copy these from the pool's **"Add the example code to your application"** page
+(OIDC properties) into `mobile/.env`:
+
+| Console value (OIDC properties) | `.env` variable                   |
+| ------------------------------- | --------------------------------- |
+| `issuer`                        | `EXPO_PUBLIC_COGNITO_ISSUER`      |
+| `clientID`                      | `EXPO_PUBLIC_USER_POOL_CLIENT_ID` |
+| `logoutURL` (optional)          | `EXPO_PUBLIC_LOGOUT_URI`          |
 
 ```bash
 cd mobile
 cp .env.example .env
-# fill in the App Client ID and domain prefix from the console
+# fill in the issuer and App Client ID
 npm install
+```
+
+The app discovers the hosted-UI endpoints from the issuer, so no domain prefix
+or region is set separately.
+
+## 12. Run locally
+
+```bash
 npm run ios      # iOS Simulator
 npm run android  # Android Emulator
 ```
 
-### Expo Go on a physical device
+On a physical device, add your machine's IP callback
+(`exp://<your-ip>:8081/--/callback`) to the App Client first.
 
-`expo-auth-session` generates a redirect URI like `exp://192.168.x.x:8081`.
-Add your machine's local IP to the App Client's **callback URLs** in the Cognito
-console before testing on a real device.
-
-### Production build (EAS Build)
+## 13. Production build (EAS)
 
 ```bash
 npm install -g eas-cli
 eas login
 eas build:configure
-
-# Build for both platforms
 eas build --platform all
 ```
 
-EAS Build uses the `myapp://callback` scheme (standalone app), which must be
-registered in the Cognito App Client's callback URLs.
-
-Set environment variables in EAS:
+Set EAS secrets:
 
 ```bash
-eas secret:create --scope project --name EXPO_PUBLIC_AWS_REGION --value us-east-1
+eas secret:create --scope project --name EXPO_PUBLIC_COGNITO_ISSUER --value https://cognito-idp.us-east-1.amazonaws.com/us-east-1_xxxxxxxxx
 eas secret:create --scope project --name EXPO_PUBLIC_USER_POOL_CLIENT_ID --value <value>
-eas secret:create --scope project --name EXPO_PUBLIC_COGNITO_DOMAIN --value <domain-prefix>
+eas secret:create --scope project --name EXPO_PUBLIC_LOGOUT_URI --value myapp://
 eas secret:create --scope project --name EXPO_PUBLIC_APP_SCHEME --value myapp
 ```
 
-> These values are public (inlined into the bundle). Using EAS secrets keeps them
-> out of the repo, but they are not confidential — the real secrets (Google client
-> secret) live only in Cognito.
+## Production checklist
 
----
-
-## Production Checklist
-
-- [ ] Google OAuth consent screen is **Published** (not Testing)
-- [ ] App Client `callbackUrls` contains only `myapp://callback` (remove `exp://` URLs)
+- [ ] Google OAuth consent screen is **Published**
+- [ ] App Client `callbackUrls` contains only `myapp://callback`
 - [ ] App Client `logoutUrls` contains only `myapp://`
-- [ ] `app.json` → `ios.bundleIdentifier` and `android.package` are set to your real identifiers
-- [ ] EAS secrets are configured (not a committed `.env` file)
-- [ ] Token refresh logic is tested (let access token expire and verify silent refresh works)
-- [ ] Refresh token rotation enabled in the Cognito App Client
+- [ ] `app.json` → `ios.bundleIdentifier` and `android.package` set
+- [ ] EAS secrets configured (no committed `.env`)
+- [ ] Token refresh tested
+- [ ] Refresh token rotation enabled in the App Client
 
----
+## Troubleshooting
 
-## Useful AWS CLI Commands
+| Symptom                                                            | Fix                                                                             |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| `redirect_uri_mismatch` in Google                                  | Google redirect URI must exactly match the Cognito `/oauth2/idpresponse` URL    |
+| Google auth screen never appears                                   | Enable Google as an identity provider on the App Client (step 9)                |
+| Save fails for callback like `expo://localhost:8081`               | Use `exp://localhost:8081/--/callback` — Expo Go uses `exp://` with `/--/`      |
+| "An error was encountered with the requested page"                 | `redirect_uri` not in callback URLs, or wrong `EXPO_PUBLIC_USER_POOL_CLIENT_ID` |
+| "Login pages unavailable"                                          | Assign a Managed Login branding style (step 4)                                  |
+| "App is not verified"                                              | Add the user as a test user, or publish the consent screen                      |
+| "Invalid input: incorrect username or password"                    | No user exists yet — sign up via Hosted UI or create one under **Users**        |
+| SMS code never arrives                                             | New accounts are in the SNS SMS sandbox — use email verification (step 2)       |
+| "User pool not configured properly for confirmation code delivery" | Enable at least Email verification (step 2)                                     |
+| Attributes not mapped                                              | Check attribute mapping on the Google identity provider (step 9)                |
+
+## Useful AWS CLI commands
 
 ```bash
-# Describe the app client
-aws cognito-idp describe-user-pool-client \
-  --user-pool-id <POOL_ID> \
-  --client-id <CLIENT_ID>
-
-# List federated users
+aws cognito-idp describe-user-pool-client --user-pool-id <POOL_ID> --client-id <CLIENT_ID>
 aws cognito-idp list-users --user-pool-id <POOL_ID>
-
-# Update callback URLs after changing scheme
 aws cognito-idp update-user-pool-client \
-  --user-pool-id <POOL_ID> \
-  --client-id <CLIENT_ID> \
-  --callback-urls '["myapp://callback"]' \
-  --logout-urls '["myapp://"]'
+  --user-pool-id <POOL_ID> --client-id <CLIENT_ID> \
+  --callback-urls '["myapp://callback"]' --logout-urls '["myapp://"]'
 ```

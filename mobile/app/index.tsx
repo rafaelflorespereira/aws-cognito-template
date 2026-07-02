@@ -9,7 +9,7 @@ import {
   parseIdToken,
   type AuthUser,
 } from "@/lib/auth";
-import { cognitoConfig, discovery, getRedirectUri } from "@/lib/cognito";
+import { cognitoConfig, issuer, getRedirectUri } from "@/lib/cognito";
 import LoginButton from "@/components/LoginButton";
 import UserProfile from "@/components/UserProfile";
 
@@ -20,6 +20,10 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
 
   const redirectUri = getRedirectUri();
+
+  // Endpoints are discovered from the issuer's
+  // /.well-known/openid-configuration (null until it loads).
+  const discovery = AuthSession.useAutoDiscovery(issuer);
 
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -48,7 +52,11 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!response) return;
     if (response.type === "error") {
-      console.error("[auth] authorization error:", response.error, response.params);
+      console.error(
+        "[auth] authorization error:",
+        response.error,
+        response.params,
+      );
       return;
     }
     if (response.type !== "success") {
@@ -86,7 +94,9 @@ export default function HomeScreen() {
           onPress={() => {
             console.log("[auth] redirectUri:", redirectUri);
             console.log("[auth] authorize url:", request?.url);
-            promptAsync().catch((err) => console.error("[auth] promptAsync failed:", err));
+            promptAsync().catch((err) =>
+              console.error("[auth] promptAsync failed:", err),
+            );
           }}
         />
       )}
