@@ -7,8 +7,10 @@ import {
   ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSchedule } from "@/features/vs/useSchedule";
 import { MANEUVERS } from "@/features/vs/content";
+import { useI18n, type TranslationKey } from "@/features/i18n";
 import PracticeStep from "@/components/PracticeStep";
 
 function fmt(sec: number): string {
@@ -19,6 +21,8 @@ function fmt(sec: number): string {
 
 export default function Practice() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { t } = useI18n();
   const { settings, completeCurrent } = useSchedule();
 
   const [remaining, setRemaining] = useState(settings.sessionDurationSec);
@@ -66,7 +70,12 @@ export default function Practice() {
   );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.container,
+        { paddingTop: insets.top + 48 },
+      ]}
+    >
       <Text style={styles.timer}>{fmt(remaining)}</Text>
 
       {!running ? (
@@ -74,11 +83,11 @@ export default function Practice() {
           style={styles.startBtn}
           onPress={() => setRunning(true)}
         >
-          <Text style={styles.startText}>Start</Text>
+          <Text style={styles.startText}>{t("practice.start")}</Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity style={styles.finishBtn} onPress={finish}>
-          <Text style={styles.finishText}>Finish now</Text>
+          <Text style={styles.finishText}>{t("practice.finish")}</Text>
         </TouchableOpacity>
       )}
 
@@ -88,8 +97,8 @@ export default function Practice() {
             <PracticeStep
               key={m.n}
               n={m.n}
-              title={m.title}
-              text={m.text}
+              title={t(`maneuver.${m.n}.title` as TranslationKey)}
+              text={t(`maneuver.${m.n}.text` as TranslationKey)}
               active={running && m.n === activeStep}
             />
           ))}
@@ -97,7 +106,7 @@ export default function Practice() {
       )}
 
       <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.cancel}>Cancel</Text>
+        <Text style={styles.cancel}>{t("practice.cancel")}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

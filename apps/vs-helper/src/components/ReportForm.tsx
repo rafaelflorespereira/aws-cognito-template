@@ -8,7 +8,9 @@ import {
   ScrollView,
 } from "react-native";
 import type { Chakra, SessionReport } from "@/features/vs/types";
-import { CHAKRAS, PERCEPTIONS } from "@/features/vs/content";
+import { CHAKRA_IDS, PERCEPTION_IDS } from "@/features/vs/content";
+import { useI18n, type TranslationKey } from "@/features/i18n";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 interface Props {
   slot: string;
@@ -23,6 +25,8 @@ function toggle<T>(list: T[], value: T): T[] {
 }
 
 export default function ReportForm({ slot, onSave, onSkip }: Props) {
+  const { t } = useI18n();
+  const insets = useSafeAreaInsets();
   const [chakrasActive, setChakrasActive] = useState<Chakra[]>([]);
   const [chakrasBlocked, setChakrasBlocked] = useState<Chakra[]>([]);
   const [wellbeing, setWellbeing] = useState(4);
@@ -42,34 +46,36 @@ export default function ReportForm({ slot, onSave, onSkip }: Props) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
-      <Text style={styles.heading}>How was it?</Text>
+    <ScrollView
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 24 }]}
+    >
+      <Text style={styles.heading}>{t("report.title")}</Text>
 
-      <Text style={styles.section}>Chakras felt most active</Text>
+      <Text style={styles.section}>{t("report.chakrasActive")}</Text>
       <View style={styles.chipWrap}>
-        {CHAKRAS.map((c) => (
+        {CHAKRA_IDS.map((c) => (
           <Chip
-            key={`a-${c.id}`}
-            label={c.label}
-            selected={chakrasActive.includes(c.id)}
-            onPress={() => setChakrasActive((p) => toggle(p, c.id))}
+            key={`a-${c}`}
+            label={t(`chakra.${c}` as TranslationKey)}
+            selected={chakrasActive.includes(c)}
+            onPress={() => setChakrasActive((p) => toggle(p, c))}
           />
         ))}
       </View>
 
-      <Text style={styles.section}>Chakras felt blocked</Text>
+      <Text style={styles.section}>{t("report.chakrasBlocked")}</Text>
       <View style={styles.chipWrap}>
-        {CHAKRAS.map((c) => (
+        {CHAKRA_IDS.map((c) => (
           <Chip
-            key={`b-${c.id}`}
-            label={c.label}
-            selected={chakrasBlocked.includes(c.id)}
-            onPress={() => setChakrasBlocked((p) => toggle(p, c.id))}
+            key={`b-${c}`}
+            label={t(`chakra.${c}` as TranslationKey)}
+            selected={chakrasBlocked.includes(c)}
+            onPress={() => setChakrasBlocked((p) => toggle(p, c))}
           />
         ))}
       </View>
 
-      <Text style={styles.section}>Wellbeing after</Text>
+      <Text style={styles.section}>{t("report.wellbeing")}</Text>
       <View style={styles.chipWrap}>
         {[1, 2, 3, 4, 5].map((n) => (
           <Chip
@@ -81,32 +87,32 @@ export default function ReportForm({ slot, onSave, onSkip }: Props) {
         ))}
       </View>
 
-      <Text style={styles.section}>Perceptions</Text>
+      <Text style={styles.section}>{t("report.perceptions")}</Text>
       <View style={styles.chipWrap}>
-        {PERCEPTIONS.map((p) => (
+        {PERCEPTION_IDS.map((p) => (
           <Chip
             key={`p-${p}`}
-            label={p}
+            label={t(`perception.${p}` as TranslationKey)}
             selected={perceptions.includes(p)}
             onPress={() => setPerceptions((prev) => toggle(prev, p))}
           />
         ))}
       </View>
 
-      <Text style={styles.section}>Notes</Text>
+      <Text style={styles.section}>{t("report.notes")}</Text>
       <TextInput
         style={styles.input}
         value={notes}
         onChangeText={setNotes}
-        placeholder="Anything you noticed (optional)"
+        placeholder={t("report.notesPlaceholder")}
         multiline
       />
 
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-        <Text style={styles.saveText}>Save report</Text>
+        <Text style={styles.saveText}>{t("report.save")}</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.skipBtn} onPress={onSkip}>
-        <Text style={styles.skipText}>Skip</Text>
+        <Text style={styles.skipText}>{t("report.skip")}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

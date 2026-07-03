@@ -9,10 +9,19 @@ import {
   ScrollView,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSchedule } from "@/features/vs/useSchedule";
+import {
+  useI18n,
+  SUPPORTED_LANGS,
+  LANG_NAMES,
+  type Lang,
+} from "@/features/i18n";
 
 export default function Settings() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { t, lang, setLang } = useI18n();
   const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
   const isOnboarding = onboarding === "1";
   const { settings, updateSettings, loading } = useSchedule();
@@ -53,18 +62,40 @@ export default function Settings() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={[
+        styles.container,
+        { paddingTop: insets.top + 24 },
+      ]}
+    >
       <Text style={styles.title}>
-        {isOnboarding ? "Set up your practice" : "Settings"}
+        {isOnboarding ? t("settings.setupTitle") : t("settings.title")}
       </Text>
-      {isOnboarding && (
-        <Text style={styles.intro}>
-          Choose how many times a day to practice and your daily window.
-          We&apos;ll space the reminders evenly through the day.
-        </Text>
-      )}
+      {isOnboarding && <Text style={styles.intro}>{t("settings.intro")}</Text>}
 
-      <Field label="Times per day">
+      <Field label={t("settings.language")}>
+        <View style={styles.langRow}>
+          {SUPPORTED_LANGS.map((l) => (
+            <TouchableOpacity
+              key={l}
+              style={[styles.langChip, lang === l && styles.langChipOn]}
+              onPress={() => setLang(l as Lang)}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.langChipText,
+                  lang === l && styles.langChipTextOn,
+                ]}
+              >
+                {LANG_NAMES[l]}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Field>
+
+      <Field label={t("settings.timesPerDay")}>
         <TextInput
           style={styles.input}
           value={timesPerDay}
@@ -73,7 +104,7 @@ export default function Settings() {
         />
       </Field>
 
-      <Field label="First time (HH:mm)">
+      <Field label={t("settings.firstTime")}>
         <TextInput
           style={styles.input}
           value={firstTime}
@@ -83,7 +114,7 @@ export default function Settings() {
         />
       </Field>
 
-      <Field label="Last time (HH:mm)">
+      <Field label={t("settings.lastTime")}>
         <TextInput
           style={styles.input}
           value={lastTime}
@@ -93,7 +124,7 @@ export default function Settings() {
         />
       </Field>
 
-      <Field label="Session duration (minutes)">
+      <Field label={t("settings.duration")}>
         <TextInput
           style={styles.input}
           value={durationMin}
@@ -103,26 +134,20 @@ export default function Settings() {
       </Field>
 
       <View style={styles.switchRow}>
-        <Text style={styles.switchLabel}>Enable notifications</Text>
+        <Text style={styles.switchLabel}>{t("settings.notifications")}</Text>
         <Switch value={notifications} onValueChange={setNotifications} />
       </View>
 
       <View style={styles.switchRow}>
-        <Text style={styles.switchLabel}>Show guided steps</Text>
+        <Text style={styles.switchLabel}>{t("settings.guidedSteps")}</Text>
         <Switch value={guided} onValueChange={setGuided} />
       </View>
 
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
         <Text style={styles.saveText}>
-          {isOnboarding ? "Start practicing" : "Save"}
+          {isOnboarding ? t("settings.startPracticing") : t("settings.save")}
         </Text>
       </TouchableOpacity>
-
-      {!isOnboarding && (
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>Back</Text>
-        </TouchableOpacity>
-      )}
     </ScrollView>
   );
 }
@@ -169,6 +194,18 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   switchLabel: { fontSize: 15, color: "#334155" },
+  langRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  langChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    backgroundColor: "#fff",
+  },
+  langChipOn: { backgroundColor: "#6366f1", borderColor: "#6366f1" },
+  langChipText: { color: "#475569", fontSize: 13, fontWeight: "600" },
+  langChipTextOn: { color: "#fff" },
   saveBtn: {
     marginTop: 12,
     backgroundColor: "#6366f1",
@@ -177,5 +214,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  back: { textAlign: "center", color: "#64748b", fontWeight: "600" },
 });

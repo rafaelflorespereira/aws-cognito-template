@@ -1,7 +1,9 @@
 import { View, Text, StyleSheet } from "react-native";
 import type { Achievement } from "@/features/vs/types";
+import { useI18n, type TranslationKey } from "@/features/i18n";
 
 export default function AchievementBadge({ item }: { item: Achievement }) {
+  const { t } = useI18n();
   const unlocked = !!item.unlockedAt;
   return (
     <View style={[styles.row, !unlocked && styles.locked]}>
@@ -9,8 +11,12 @@ export default function AchievementBadge({ item }: { item: Achievement }) {
         <Text style={styles.dotText}>{unlocked ? "★" : "☆"}</Text>
       </View>
       <View style={styles.textCol}>
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.desc}>{item.description}</Text>
+        <Text style={styles.title}>
+          {t(`achievement.${item.id}.title` as TranslationKey)}
+        </Text>
+        <Text style={styles.desc}>
+          {t(`achievement.${item.id}.desc` as TranslationKey)}
+        </Text>
       </View>
     </View>
   );

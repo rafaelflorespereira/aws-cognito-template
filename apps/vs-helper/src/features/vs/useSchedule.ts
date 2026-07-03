@@ -10,8 +10,14 @@ import {
   saveReport,
   todayStr,
 } from "./storage";
-import { computeSlots, nextSlot } from "./schedule";
+import {
+  computeSlots,
+  nextSlot,
+  nextDueDate,
+  currentSpacingMin,
+} from "./schedule";
 import { rescheduleAll, cancelAll, requestPermission } from "./notifications";
+import { useI18n } from "../i18n";
 
 export interface UseSchedule {
   settings: VSSettings;
@@ -19,6 +25,8 @@ export interface UseSchedule {
   loading: boolean;
   slots: string[];
   next: string | null;
+  nextDue: Date | null; // adaptive recommended time for the next session
+  spacingMin: number; // adaptive minutes between remaining sessions
   progress: DailyProgress;
   refresh: () => Promise<void>;
   updateSettings: (partial: Partial<VSSettings>) => Promise<void>;
@@ -31,11 +39,13 @@ export interface UseSchedule {
 }
 
 export function useSchedule(): UseSchedule {
+  const { t } = useI18n();
   const [settings, setSettings] = useState<VSSettings>(DEFAULT_SETTINGS);
   const [progress, setProgress] = useState<DailyProgress>({
     date: todayStr(),
     completed: 0,
     completedSlots: [],
+    lastCompletedAt: null,
   });
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState<Date>(new Date());
@@ -59,6 +69,31 @@ export function useSchedule(): UseSchedule {
   const slots = useMemo(() => computeSlots(settings), [settings]);
   const next = useMemo(() => nextSlot(slots, now), [slots, now]);
 
+  const adaptiveInput = useMemo(
+    () => ({
+      timesPerDay: settings.timesPerDay,
+      firstTime: settings.firstTime,
+      lastTime: settings.lastTime,
+      completed: progress.completed,
+      lastCompletedAt: progress.lastCompletedAt,
+    }),
+    [
+      settings.timesPerDay,
+      settings.firstTime,
+      settings.lastTime,
+      progress.completed,
+      progress.lastCompletedAt,
+    ],
+  );
+  const nextDue = useMemo(
+    () => nextDueDate(adaptiveInput, now),
+    [adaptiveInput, now],
+  );
+  const spacingMin = useMemo(
+    () => currentSpacingMin(adaptiveInput, now),
+    [adaptiveInput, now],
+  );
+
   const updateSettings = useCallback(
     async (partial: Partial<VSSettings>) => {
       const merged: VSSettings = { ...settings, ...partial };
@@ -68,12 +103,16 @@ export function useSchedule(): UseSchedule {
       const newSlots = computeSlots(merged);
       if (merged.notificationsEnabled) {
         const granted = await requestPermission();
-        if (granted) await rescheduleAll(newSlots);
+        if (granted)
+          await rescheduleAll(newSlots, {
+            title: t("notif.title"),
+            body: t("notif.body"),
+          });
       } else {
         await cancelAll();
       }
     },
-    [settings],
+    [settings, t],
   );
 
   const completeCurrent = useCallback(
@@ -98,6 +137,8 @@ export function useSchedule(): UseSchedule {
     loading,
     slots,
     next,
+    nextDue,
+    spacingMin,
     progress,
     refresh,
     updateSettings,

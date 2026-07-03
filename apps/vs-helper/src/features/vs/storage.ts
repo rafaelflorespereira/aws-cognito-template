@@ -58,6 +58,7 @@ export async function loadTodayProgress(): Promise<DailyProgress> {
     date: today,
     completed: 0,
     completedSlots: [],
+    lastCompletedAt: null,
   };
   await AsyncStorage.setItem(KEYS.progress, JSON.stringify(fresh));
   return fresh;
@@ -65,10 +66,11 @@ export async function loadTodayProgress(): Promise<DailyProgress> {
 
 export async function markSlotDone(slot: string): Promise<DailyProgress> {
   const progress = await loadTodayProgress();
-  if (!progress.completedSlots.includes(slot)) {
-    progress.completedSlots.push(slot);
-  }
+  // Count every completed session, even repeats of the same slot: finishing a
+  // practice always advances today's X/target counter by one.
+  progress.completedSlots.push(slot);
   progress.completed = progress.completedSlots.length;
+  progress.lastCompletedAt = new Date().toISOString();
   await AsyncStorage.setItem(KEYS.progress, JSON.stringify(progress));
   return progress;
 }

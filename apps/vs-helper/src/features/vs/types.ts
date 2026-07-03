@@ -11,7 +11,8 @@ export interface VSSettings {
 export interface DailyProgress {
   date: string; // "YYYY-MM-DD" (local)
   completed: number; // sessions done today
-  completedSlots: string[]; // "HH:mm" slots marked done
+  completedSlots: string[]; // "HH:mm" slots logged, one per completed session (may repeat)
+  lastCompletedAt: string | null; // ISO of the most recent completion today
 }
 
 export type Chakra =
@@ -52,7 +53,5 @@ export interface LifetimeStats {
 
 export interface Achievement {
   id: string; // "first-vs", "century", "streak-7", ...
-  title: string;
-  description: string;
   unlockedAt: string | null; // ISO when unlocked; null while locked
 }

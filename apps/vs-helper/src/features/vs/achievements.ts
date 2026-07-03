@@ -1,44 +1,16 @@
 import type { Achievement, LifetimeStats } from "./types";
 
 // Catalog of achievements (all locked by default). `unlockedAt` is set by
-// evaluateAchievements once the corresponding condition is met.
+// evaluateAchievements once the corresponding condition is met. Titles and
+// descriptions are translated at render time via i18n keys
+// `achievement.<id>.title` / `achievement.<id>.desc`.
 export const ACHIEVEMENTS: Achievement[] = [
-  {
-    id: "first-vs",
-    title: "First Spark",
-    description: "Complete your first Vibrational State.",
-    unlockedAt: null,
-  },
-  {
-    id: "ten",
-    title: "Getting Warm",
-    description: "Complete 10 Vibrational States.",
-    unlockedAt: null,
-  },
-  {
-    id: "century",
-    title: "Century",
-    description: "Complete 100 Vibrational States.",
-    unlockedAt: null,
-  },
-  {
-    id: "streak-3",
-    title: "Momentum",
-    description: "Meet your daily goal 3 days in a row.",
-    unlockedAt: null,
-  },
-  {
-    id: "streak-7",
-    title: "Steady Practice",
-    description: "Meet your daily goal 7 days in a row.",
-    unlockedAt: null,
-  },
-  {
-    id: "days-30",
-    title: "Second Nature",
-    description: "Practice on 30 different days.",
-    unlockedAt: null,
-  },
+  { id: "first-vs", unlockedAt: null },
+  { id: "ten", unlockedAt: null },
+  { id: "century", unlockedAt: null },
+  { id: "streak-3", unlockedAt: null },
+  { id: "streak-7", unlockedAt: null },
+  { id: "days-30", unlockedAt: null },
 ];
 
 const CONDITIONS: Record<string, (s: LifetimeStats) => boolean> = {

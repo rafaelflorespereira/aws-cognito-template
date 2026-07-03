@@ -19,14 +19,17 @@ export async function cancelAll(): Promise<void> {
 }
 
 // Schedule one daily-repeating notification per computed "HH:mm" slot.
-export async function rescheduleAll(slots: string[]): Promise<void> {
+export async function rescheduleAll(
+  slots: string[],
+  text: { title: string; body: string },
+): Promise<void> {
   await cancelAll();
   for (const slot of slots) {
     const [hour, minute] = slot.split(":").map(Number);
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: "Vibrational State",
-        body: "Time for your VS practice.",
+        title: text.title,
+        body: text.body,
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DAILY,

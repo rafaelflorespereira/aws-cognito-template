@@ -42,3 +42,58 @@ export function nextSlot(slots: string[], now: Date): string | null {
   }
   return null;
 }
+
+// Build a Date for today at "HH:mm" (local).
+export function atTimeToday(now: Date, hhmm: string): Date {
+  const [h, m] = hhmm.split(":").map(Number);
+  const d = new Date(now);
+  d.setHours(h || 0, m || 0, 0, 0);
+  return d;
+}
+
+export interface AdaptiveInput {
+  timesPerDay: number;
+  firstTime: string;
+  lastTime: string;
+  completed: number;
+  lastCompletedAt: string | null;
+}
+
+/**
+ * Recommended next practice time for today (adaptive), or null when the day's
+ * target is already met. The remaining sessions are spread evenly across the
+ * time left in the window, re-anchored on the last completion — so doing one
+ * early stretches the gap and falling behind compresses it.
+ */
+export function nextDueDate(input: AdaptiveInput, now: Date): Date | null {
+  const target = Math.max(1, Math.floor(input.timesPerDay));
+  if (input.completed >= target) return null;
+
+  const start = atTimeToday(now, input.firstTime);
+  const end = atTimeToday(now, input.lastTime);
+
+  // Before any practice today, the first one is due at the window start.
+  if (input.completed === 0 || !input.lastCompletedAt) return start;
+
+  const anchor = new Date(input.lastCompletedAt);
+  const remaining = target - input.completed;
+  const msLeft = end.getTime() - anchor.getTime();
+  if (msLeft <= 0) return null; // past the window; nothing more scheduled today
+  return new Date(anchor.getTime() + msLeft / remaining);
+}
+
+/** Current spacing in minutes between the remaining sessions (for display). */
+export function currentSpacingMin(input: AdaptiveInput, now: Date): number {
+  const target = Math.max(1, Math.floor(input.timesPerDay));
+  const start = atTimeToday(now, input.firstTime);
+  const end = atTimeToday(now, input.lastTime);
+  const totalWindowMs = Math.max(1, end.getTime() - start.getTime());
+
+  const useAnchor = input.completed > 0 && input.lastCompletedAt;
+  const anchor = useAnchor ? new Date(input.lastCompletedAt as string) : start;
+  const remaining = Math.max(1, target - input.completed);
+  const msLeft = useAnchor
+    ? Math.max(0, end.getTime() - anchor.getTime()) || totalWindowMs
+    : totalWindowMs;
+  return Math.max(1, Math.round(msLeft / remaining / 60000));
+}

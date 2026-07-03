@@ -9,6 +9,9 @@
 > `mobile/` auth template stays **untouched** as a reference; its auth logic is
 > extracted into a shared workspace package (`packages/auth`, `@vs/auth`) that the
 > VS app consumes. See [§7 Monorepo Structure](#7-monorepo-structure).
+>
+> **Running it:** to serve the app on iOS (Simulator or a physical iPhone via
+> Expo Go), see [`vs-helper-ios.md`](vs-helper-ios.md).
 
 ## 1. What is the Vibrational State?
 
@@ -524,74 +527,74 @@ tables partition by `userId`; time-series tables add a sort key (`sk`).
 
 **Users** — profile & leaderboard opt-in (`PK: userId`)
 
-| Attribute          | Type      | Notes                               |
-| ------------------ | --------- | ----------------------------------- |
-| `userId`           | string    | Cognito `sub` (partition key)       |
-| `email`            | string    | from the ID token                   |
-| `name`             | string    | full name from Google               |
-| `picture`          | string    | avatar URL                          |
-| `handle`           | string    | public leaderboard name (opt-in)    |
-| `leaderboardOptIn` | boolean   | default `false`                     |
-| `createdAt`        | string    | ISO timestamp                       |
-| `updatedAt`        | string    | ISO timestamp                       |
+| Attribute          | Type    | Notes                            |
+| ------------------ | ------- | -------------------------------- |
+| `userId`           | string  | Cognito `sub` (partition key)    |
+| `email`            | string  | from the ID token                |
+| `name`             | string  | full name from Google            |
+| `picture`          | string  | avatar URL                       |
+| `handle`           | string  | public leaderboard name (opt-in) |
+| `leaderboardOptIn` | boolean | default `false`                  |
+| `createdAt`        | string  | ISO timestamp                    |
+| `updatedAt`        | string  | ISO timestamp                    |
 
 **UserSettings** — one per user (`PK: userId`)
 
-| Attribute              | Type    | Notes                          |
-| ---------------------- | ------- | ------------------------------ |
-| `timesPerDay`          | number  |                                |
-| `firstTime`            | string  | `"HH:mm"`                       |
-| `lastTime`             | string  | `"HH:mm"`                       |
-| `sessionDurationSec`   | number  | default 120                    |
-| `notificationsEnabled` | boolean |                                |
-| `showGuidedSteps`      | boolean |                                |
-| `configured`           | boolean | first-run onboarding done      |
-| `updatedAt`            | string  | ISO — last-write-wins on sync  |
+| Attribute              | Type    | Notes                         |
+| ---------------------- | ------- | ----------------------------- |
+| `timesPerDay`          | number  |                               |
+| `firstTime`            | string  | `"HH:mm"`                     |
+| `lastTime`             | string  | `"HH:mm"`                     |
+| `sessionDurationSec`   | number  | default 120                   |
+| `notificationsEnabled` | boolean |                               |
+| `showGuidedSteps`      | boolean |                               |
+| `configured`           | boolean | first-run onboarding done     |
+| `updatedAt`            | string  | ISO — last-write-wins on sync |
 
 **Sessions** — append-only history, one row per completed VS
 (`PK: userId`, `SK: "SESSION#<completedAt>"`)
 
-| Attribute     | Type   | Notes                          |
-| ------------- | ------ | ------------------------------ |
-| `date`        | string | `"YYYY-MM-DD"` (local)         |
-| `slot`        | string | `"HH:mm"`                       |
-| `completedAt` | string | ISO — idempotency key          |
+| Attribute     | Type   | Notes                  |
+| ------------- | ------ | ---------------------- |
+| `date`        | string | `"YYYY-MM-DD"` (local) |
+| `slot`        | string | `"HH:mm"`              |
+| `completedAt` | string | ISO — idempotency key  |
 
 **Reports** — post-session reflection, **opt-in** (`PK: userId`,
 `SK: "REPORT#<completedAt>"`)
 
-| Attribute       | Type          | Notes                        |
-| --------------- | ------------- | ---------------------------- |
-| `slot`          | string        | `"HH:mm"`                     |
-| `chakrasActive` | string set    | chakra ids                   |
-| `chakrasBlocked`| string set    | chakra ids                   |
-| `wellbeing`     | number        | 1..5                         |
-| `perceptions`   | string set    | tingling, warmth, …          |
-| `notes`         | string        | optional free text           |
+| Attribute        | Type       | Notes               |
+| ---------------- | ---------- | ------------------- |
+| `slot`           | string     | `"HH:mm"`           |
+| `chakrasActive`  | string set | chakra ids          |
+| `chakrasBlocked` | string set | chakra ids          |
+| `wellbeing`      | number     | 1..5                |
+| `perceptions`    | string set | tingling, warmth, … |
+| `notes`          | string     | optional free text  |
 
 > Reports are sensitive; by default they stay **on-device**. This table exists
 > only if the user opts into full report sync.
 
 **DailyProgress** — per-day rollup (`PK: userId`, `SK: "DAY#<date>"`)
 
-| Attribute   | Type    | Notes                          |
-| ----------- | ------- | ------------------------------ |
-| `date`      | string  | `"YYYY-MM-DD"`                 |
-| `completed` | number  | sessions that day              |
-| `goal`      | number  | `timesPerDay` snapshot         |
-| `met`       | boolean | `completed >= goal`            |
+| Attribute   | Type    | Notes                  |
+| ----------- | ------- | ---------------------- |
+| `date`      | string  | `"YYYY-MM-DD"`         |
+| `completed` | number  | sessions that day      |
+| `goal`      | number  | `timesPerDay` snapshot |
+| `met`       | boolean | `completed >= goal`    |
 
 **Stats** — lifetime aggregate, one per user (`PK: userId`, `SK: "STATS"`)
 
-| Attribute        | Type   | Notes                                    |
-| ---------------- | ------ | ---------------------------------------- |
-| `totalSessions`  | number |                                          |
-| `daysActive`     | number |                                          |
-| `currentStreak`  | number |                                          |
-| `bestStreak`     | number |                                          |
-| `lastActiveDate` | string | `"YYYY-MM-DD"`                           |
-| `gsi1pk`         | string | `"LEADERBOARD"` — set only if opted-in   |
-| `gsi1sk`         | number | zero-padded `totalSessions` for ranking  |
+| Attribute        | Type   | Notes                                   |
+| ---------------- | ------ | --------------------------------------- |
+| `totalSessions`  | number |                                         |
+| `daysActive`     | number |                                         |
+| `currentStreak`  | number |                                         |
+| `bestStreak`     | number |                                         |
+| `lastActiveDate` | string | `"YYYY-MM-DD"`                          |
+| `gsi1pk`         | string | `"LEADERBOARD"` — set only if opted-in  |
+| `gsi1sk`         | number | zero-padded `totalSessions` for ranking |
 
 **UserAchievements** — unlocks (`PK: userId`, `SK: "ACH#<achievementId>"`)
 

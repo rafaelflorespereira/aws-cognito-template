@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { Stack, useRouter } from "expo-router";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as WebBrowser from "expo-web-browser";
 import { loadSettings } from "@/features/vs/storage";
+import { I18nProvider, getInitialLang, type Lang } from "@/features/i18n";
 
 // Required on web to complete the auth session after redirect; no-op on native.
 WebBrowser.maybeCompleteAuthSession();
@@ -11,10 +13,12 @@ export default function RootLayout() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const [lang, setLang] = useState<Lang | null>(null);
 
   useEffect(() => {
-    loadSettings().then((s) => {
+    Promise.all([loadSettings(), getInitialLang()]).then(([s, initialLang]) => {
       setNeedsOnboarding(!s.configured);
+      setLang(initialLang);
       setReady(true);
     });
   }, []);
@@ -26,7 +30,7 @@ export default function RootLayout() {
     }
   }, [ready, needsOnboarding, router]);
 
-  if (!ready) {
+  if (!ready || !lang) {
     return (
       <View style={styles.center}>
         <ActivityIndicator />
@@ -34,7 +38,17 @@ export default function RootLayout() {
     );
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <SafeAreaProvider>
+      <I18nProvider initialLang={lang}>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="practice" />
+          <Stack.Screen name="report" />
+        </Stack>
+      </I18nProvider>
+    </SafeAreaProvider>
+  );
 }
 
 const styles = StyleSheet.create({

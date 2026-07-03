@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
+import Svg, { Circle } from "react-native-svg";
 
 interface Props {
   size?: number;
@@ -7,8 +8,8 @@ interface Props {
   sublabel?: string;
 }
 
-// Lightweight "ring" without extra SVG deps: a thick circular track with the
-// value in the middle. Good enough for the dashboard/stats at-a-glance.
+// Circular progress ring that draws a proportional arc for `progress` (0..1)
+// using an SVG stroke, with the value shown in the middle.
 export default function ProgressRing({
   size = 160,
   progress,
@@ -16,22 +17,49 @@ export default function ProgressRing({
   sublabel,
 }: Props) {
   const clamped = Math.max(0, Math.min(1, progress));
-  const border = Math.round(size * 0.08);
+  const stroke = Math.round(size * 0.08);
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const dash = circumference * clamped;
+  const done = clamped >= 1;
+  const color = done ? "#22c55e" : "#6366f1";
+  const center = size / 2;
+
   return (
     <View style={{ alignItems: "center" }}>
       <View
-        style={[
-          styles.ring,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-            borderWidth: border,
-            borderColor: clamped >= 1 ? "#22c55e" : "#6366f1",
-            opacity: clamped === 0 ? 0.35 : 1,
-          },
-        ]}
+        style={{
+          width: size,
+          height: size,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
       >
+        <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+          {/* Track */}
+          <Circle
+            cx={center}
+            cy={center}
+            r={radius}
+            stroke="#e2e8f0"
+            strokeWidth={stroke}
+            fill="none"
+          />
+          {/* Progress arc */}
+          {clamped > 0 ? (
+            <Circle
+              cx={center}
+              cy={center}
+              r={radius}
+              stroke={color}
+              strokeWidth={stroke}
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              transform={`rotate(-90 ${center} ${center})`}
+            />
+          ) : null}
+        </Svg>
         <Text style={styles.label}>{label}</Text>
         {sublabel ? <Text style={styles.sublabel}>{sublabel}</Text> : null}
       </View>
@@ -40,11 +68,6 @@ export default function ProgressRing({
 }
 
 const styles = StyleSheet.create({
-  ring: {
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-  },
   label: {
     fontSize: 30,
     fontWeight: "800",
