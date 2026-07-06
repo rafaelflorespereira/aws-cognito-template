@@ -487,21 +487,31 @@ logs it before `promptAsync()` so you can register the exact string.
 | ----- | --------------------------------------------------------------------------------- | ------ |
 | 1     | On-device MVP: settings, schedule, notifications, practice, report, gamification | Done |
 | 2     | Cloud sync of settings/sessions/stats (Cognito identity + API); richer statistics | Settings + Sessions + Stats sync shipped — see [`vs-helper-backend.md`](vs-helper-backend.md). Reports/achievements sync and richer statistics still open |
-| 3     | Global **leaderboard**; situational reminders (the 20 situations); group mode    | Not started |
+| 3     | Global **leaderboard**; situational reminders (the 20 situations); group mode    | Leaderboard shipped — see [`vs-helper-backend.md`](vs-helper-backend.md). Situational reminders and group mode not started |
 
-## 11. Future: Leaderboard (scores window)
+## 11. Leaderboard (scores window)
 
-A later, backend-backed feature that shows **all users and their status** — e.g.
-total Vibrational States done, current/best streak, days active — ranked.
+**Shipped** — a backend-backed feature that shows opted-in users and their
+status — total Vibrational States done, current/best streak — ranked. See
+[`vs-helper-backend.md`](vs-helper-backend.md) for the deployed `/profile` and
+`/leaderboard` routes and `apps/vs-helper/app/(tabs)/leaderboard.tsx` for the
+screen. `days active` is not shown on the board (only in the on-device Stats
+tab); the ranking key is `totalSessions`.
 
 - **Backend**: API Gateway + Lambda + DynamoDB, with requests authorized by the
   Cognito ID token; each user's aggregate is keyed by their Cognito `sub`.
-- **Sync**: the app periodically pushes `LifetimeStats` (not raw reports) for the
-  signed-in user; the leaderboard reads aggregated, ranked rows.
-- **Privacy**: **opt-in** only. Users choose a display name/handle; sensitive
-  report details (chakras, perceptions, notes) never leave the device — only
-  coarse counts are shared. Signed-out users are never listed.
-- **Screen**: a `leaderboard.tsx` route (top ranks + the current user's position).
+- **Sync**: `Stats` is already recomputed server-side on every `POST /sessions`
+  (§12.2); the leaderboard just indexes that same row via a GSI
+  (`gsi1pk`/`gsi1sk`) when the user is opted in, so no separate push exists —
+  the leaderboard reads aggregated, ranked rows straight off `Stats`.
+- **Privacy**: **opt-in** only, set via `PUT /profile`. Users choose a display
+  name/handle; sensitive report details (chakras, perceptions, notes) never
+  leave the device — only coarse counts (`totalSessions`, streaks) are shared.
+  Signed-out users are never listed, and opting out immediately drops the row
+  from the GSI (DynamoDB only indexes items carrying the GSI's key attributes).
+- **Screen**: `app/(tabs)/leaderboard.tsx` — top 50 ranks with an `isYou`
+  highlight on the current user's row; no separate "your position" query yet
+  if they're ranked below 50th.
 
 ## 12. Data & Database (cloud sync)
 
@@ -509,9 +519,9 @@ Phase 1 keeps everything on-device (AsyncStorage). **Phase 2** adds a backend
 (**API Gateway + Lambda + DynamoDB**, `infra/vs-helper-backend`) that signed-in
 users sync to, authorized by the Cognito ID token. Every record is owned by the
 user's Cognito `sub` (`userId`), and requests are scoped to that `sub` so a
-user can only touch their own partition. **Shipped so far**: `UserSettings`
-and `Sessions`/`Stats` (§12.2 below) — see
-[`vs-helper-backend.md`](vs-helper-backend.md) for the deployed API. `Users`,
+user can only touch their own partition. **Shipped so far**: `UserSettings`,
+`Sessions`/`Stats`, and `Users` (§12.2 below, leaderboard opt-in fields only —
+see [`vs-helper-backend.md`](vs-helper-backend.md) for the deployed API).
 `Reports` and `UserAchievements` tables described below are **not yet built**.
 
 ### 12.1 Entity overview

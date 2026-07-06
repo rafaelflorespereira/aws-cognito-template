@@ -21,6 +21,7 @@ export const translations = {
   en: {
     "tab.home": "Home",
     "tab.progress": "Progress",
+    "tab.leaderboard": "Leaderboard",
     "tab.settings": "Settings",
     "tab.account": "Account",
 
@@ -68,6 +69,23 @@ export const translations = {
     "account.loginSubtitle":
       "Signing in lets your sessions count across devices (optional).",
     "account.signOut": "Sign out",
+
+    "leaderboard.title": "Leaderboard",
+    "leaderboard.intro":
+      "Opt in to show your total Vibrational States and streak on the global leaderboard, under a public handle. Reports and personal details never leave your device.",
+    "leaderboard.handleLabel": "Public handle",
+    "leaderboard.handlePlaceholder": "e.g. energy_seeker",
+    "leaderboard.optIn": "Show me on the leaderboard",
+    "leaderboard.handleInvalid":
+      "Handle must be 3-20 letters, digits, or underscores.",
+    "leaderboard.saveFailed": "Couldn't save — please try again.",
+    "leaderboard.saving": "Saving...",
+    "leaderboard.save": "Save",
+    "leaderboard.rankings": "Rankings",
+    "leaderboard.empty": "No one has joined the leaderboard yet.",
+    "leaderboard.signInBlurb":
+      "Sign in to join the leaderboard and see how your practice compares.",
+    "leaderboard.goToAccount": "Go to Account",
 
     "report.title": "How was it?",
     "report.chakrasActive": "Chakras felt most active",
@@ -137,6 +155,7 @@ export const translations = {
   pt: {
     "tab.home": "Início",
     "tab.progress": "Progresso",
+    "tab.leaderboard": "Ranking",
     "tab.settings": "Ajustes",
     "tab.account": "Conta",
 
@@ -184,6 +203,23 @@ export const translations = {
     "account.loginSubtitle":
       "Entrar permite que suas sessões contem em vários dispositivos (opcional).",
     "account.signOut": "Sair",
+
+    "leaderboard.title": "Ranking",
+    "leaderboard.intro":
+      "Participe para mostrar seu total de Estados Vibracionais e sua sequência no ranking global, sob um nome público. Relatos e dados pessoais nunca saem do seu dispositivo.",
+    "leaderboard.handleLabel": "Nome público",
+    "leaderboard.handlePlaceholder": "ex.: buscador_energia",
+    "leaderboard.optIn": "Mostrar-me no ranking",
+    "leaderboard.handleInvalid":
+      "O nome deve ter 3-20 letras, números ou underscores.",
+    "leaderboard.saveFailed": "Não foi possível salvar — tente novamente.",
+    "leaderboard.saving": "Salvando...",
+    "leaderboard.save": "Salvar",
+    "leaderboard.rankings": "Classificação",
+    "leaderboard.empty": "Ninguém entrou no ranking ainda.",
+    "leaderboard.signInBlurb":
+      "Entre para participar do ranking e ver como sua prática se compara.",
+    "leaderboard.goToAccount": "Ir para Conta",
 
     "report.title": "Como foi?",
     "report.chakrasActive": "Chacras mais ativos",
@@ -253,6 +289,7 @@ export const translations = {
   es: {
     "tab.home": "Inicio",
     "tab.progress": "Progreso",
+    "tab.leaderboard": "Clasificación",
     "tab.settings": "Ajustes",
     "tab.account": "Cuenta",
 
@@ -300,6 +337,23 @@ export const translations = {
     "account.loginSubtitle":
       "Iniciar sesión permite que tus sesiones cuenten en varios dispositivos (opcional).",
     "account.signOut": "Cerrar sesión",
+
+    "leaderboard.title": "Clasificación",
+    "leaderboard.intro":
+      "Únete para mostrar tu total de Estados Vibracionales y tu racha en la clasificación global, bajo un nombre público. Los informes y datos personales nunca salen de tu dispositivo.",
+    "leaderboard.handleLabel": "Nombre público",
+    "leaderboard.handlePlaceholder": "ej.: buscador_energia",
+    "leaderboard.optIn": "Mostrarme en la clasificación",
+    "leaderboard.handleInvalid":
+      "El nombre debe tener 3-20 letras, números o guiones bajos.",
+    "leaderboard.saveFailed": "No se pudo guardar — inténtalo de nuevo.",
+    "leaderboard.saving": "Guardando...",
+    "leaderboard.save": "Guardar",
+    "leaderboard.rankings": "Clasificación",
+    "leaderboard.empty": "Todavía nadie se ha unido a la clasificación.",
+    "leaderboard.signInBlurb":
+      "Inicia sesión para unirte a la clasificación y ver cómo se compara tu práctica.",
+    "leaderboard.goToAccount": "Ir a Cuenta",
 
     "report.title": "¿Cómo estuvo?",
     "report.chakrasActive": "Chakras más activos",
@@ -369,6 +423,7 @@ export const translations = {
   fr: {
     "tab.home": "Accueil",
     "tab.progress": "Progrès",
+    "tab.leaderboard": "Classement",
     "tab.settings": "Réglages",
     "tab.account": "Compte",
 
@@ -416,6 +471,23 @@ export const translations = {
     "account.loginSubtitle":
       "Se connecter permet à vos séances de compter sur plusieurs appareils (facultatif).",
     "account.signOut": "Se déconnecter",
+
+    "leaderboard.title": "Classement",
+    "leaderboard.intro":
+      "Participez pour afficher votre total d'États Vibratoires et votre série dans le classement mondial, sous un pseudo public. Les comptes rendus et données personnelles ne quittent jamais votre appareil.",
+    "leaderboard.handleLabel": "Pseudo public",
+    "leaderboard.handlePlaceholder": "ex. : chercheur_energie",
+    "leaderboard.optIn": "M'afficher dans le classement",
+    "leaderboard.handleInvalid":
+      "Le pseudo doit comporter 3 à 20 lettres, chiffres ou underscores.",
+    "leaderboard.saveFailed": "Échec de l'enregistrement — réessayez.",
+    "leaderboard.saving": "Enregistrement...",
+    "leaderboard.save": "Enregistrer",
+    "leaderboard.rankings": "Classement",
+    "leaderboard.empty": "Personne n'a encore rejoint le classement.",
+    "leaderboard.signInBlurb":
+      "Connectez-vous pour rejoindre le classement et comparer votre pratique.",
+    "leaderboard.goToAccount": "Aller au Compte",
 
     "report.title": "Comment c'était ?",
     "report.chakrasActive": "Chakras les plus actifs",
@@ -487,6 +559,7 @@ export const translations = {
   it: {
     "tab.home": "Home",
     "tab.progress": "Progressi",
+    "tab.leaderboard": "Classifica",
     "tab.settings": "Impostazioni",
     "tab.account": "Account",
 
@@ -534,6 +607,23 @@ export const translations = {
     "account.loginSubtitle":
       "Accedendo, le tue sessioni contano su più dispositivi (facoltativo).",
     "account.signOut": "Esci",
+
+    "leaderboard.title": "Classifica",
+    "leaderboard.intro":
+      "Partecipa per mostrare il tuo totale di Stati Vibrazionali e la tua serie nella classifica globale, con un nome pubblico. Resoconti e dati personali non lasciano mai il tuo dispositivo.",
+    "leaderboard.handleLabel": "Nome pubblico",
+    "leaderboard.handlePlaceholder": "es.: cercatore_energia",
+    "leaderboard.optIn": "Mostrami nella classifica",
+    "leaderboard.handleInvalid":
+      "Il nome deve avere 3-20 lettere, numeri o underscore.",
+    "leaderboard.saveFailed": "Salvataggio non riuscito — riprova.",
+    "leaderboard.saving": "Salvataggio...",
+    "leaderboard.save": "Salva",
+    "leaderboard.rankings": "Classifica",
+    "leaderboard.empty": "Nessuno si è ancora unito alla classifica.",
+    "leaderboard.signInBlurb":
+      "Accedi per unirti alla classifica e vedere come si confronta la tua pratica.",
+    "leaderboard.goToAccount": "Vai ad Account",
 
     "report.title": "Com'è andata?",
     "report.chakrasActive": "Chakra più attivi",
