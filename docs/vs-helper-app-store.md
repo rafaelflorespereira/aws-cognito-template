@@ -26,12 +26,19 @@ eas init            # creates the EAS project and writes extra.eas.projectId to 
 
 ## 2. Verify required `app.json` fields
 
-App Store review requires these to be present and stable:
+App Store review requires these to be present and stable — all already set:
 
-- `expo.ios.bundleIdentifier` — already `com.rafaelflorespereira.vshelper`
+- `expo.ios.bundleIdentifier` — `com.rafaelflorespereira.vshelper`
 - `expo.version` — the user-facing version (e.g. `1.0.0`)
-- `expo.icon` — 1024×1024 PNG, no alpha/transparency
-- A splash screen (via `expo-splash-screen` or `expo.splash`)
+- `expo.icon` — `./assets/icon.png` (1024×1024, no alpha/transparency)
+- `expo.splash` — `./assets/splash.png`
+- `expo.android.adaptiveIcon.foregroundImage` — `./assets/adaptive-icon.png`
+
+> The `assets/` images are a **placeholder mark** (concentric rings in the
+> app's indigo/navy palette), generated to unblock builds — swap them for
+> real branding before a public release. Regenerate with
+> `python3` + Pillow, or replace the PNGs directly; `app.json` doesn't need
+> to change as long as the filenames stay the same.
 
 > `ios.buildNumber` is managed automatically: `eas.json` uses
 > `"appVersionSource": "remote"` with `"autoIncrement": true`, so EAS bumps the
@@ -47,6 +54,9 @@ eas secret:create --scope project --name EXPO_PUBLIC_COGNITO_ISSUER --value http
 eas secret:create --scope project --name EXPO_PUBLIC_USER_POOL_CLIENT_ID --value <client-id>
 eas secret:create --scope project --name EXPO_PUBLIC_LOGOUT_URI --value vshelper://
 eas secret:create --scope project --name EXPO_PUBLIC_APP_SCHEME --value vshelper
+# Optional — cloud sync backend (infra/vs-helper-backend, see vs-helper-backend.md).
+# Omit this secret and the app runs fully on-device; sync silently no-ops without it.
+eas secret:create --scope project --name EXPO_PUBLIC_API_BASE_URL --value https://<api-id>.execute-api.<region>.amazonaws.com
 ```
 
 ## 4. Point Cognito at the production scheme
@@ -100,15 +110,22 @@ In **App Store Connect**:
 
 ## Pre-submission checklist
 
+Items marked **done** are already handled in this repo; the rest need one of
+your own accounts (Apple, Expo/EAS, App Store Connect) and can't be automated.
+
+- [x] 1024×1024 icon (no transparency), splash, and Android adaptive icon set
+      (`apps/vs-helper/assets/` — placeholder branding, swap before a public release)
+- [x] Privacy policy drafted — [`vs-helper-privacy-policy.md`](vs-helper-privacy-policy.md)
+- [ ] Privacy policy **published** at a public URL (e.g. GitHub Pages) and the
+      contact email in it replaced with a real one
 - [ ] Apple Developer membership active
 - [ ] App record created in App Store Connect (bundle ID matches)
 - [ ] `expo.version` bumped for this release
-- [ ] 1024×1024 icon (no transparency) and splash screen set
-- [ ] EAS secrets set for all `EXPO_PUBLIC_*` vars
+- [ ] EAS secrets set for all `EXPO_PUBLIC_*` vars (§3 above)
 - [ ] Cognito callback/sign-out URLs include `vshelper://callback` and `vshelper://`
-- [ ] `eas.json` submit credentials filled in
+- [ ] `eas.json` submit credentials filled in (`appleId`, `appleTeamId`, `ascAppId`)
 - [ ] Google OAuth consent screen **Published** (not Testing)
-- [ ] Privacy policy URL ready (required by App Store)
+- [ ] Privacy policy URL entered in App Store Connect's App Privacy section
 
 ## Subsequent releases
 
@@ -129,4 +146,4 @@ version changes.
 | Build succeeds but login fails in prod       | Add `vshelper://callback` / `vshelper://` to the Cognito App Client URLs.         |
 | `EXPO_PUBLIC_*` undefined in the store build | Values must be set as **EAS secrets**; local `.env` is not used for cloud builds. |
 | Icon rejected                                | Use a 1024×1024 PNG with **no alpha channel**.                                    |
-| Missing compliance / privacy                 | Complete the export-compliance and App Privacy sections in App Store Connect.     |
+| Missing compliance / privacy                 | Complete the export-compliance and App Privacy sections; publish [`vs-helper-privacy-policy.md`](vs-helper-privacy-policy.md) and link it. |

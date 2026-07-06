@@ -21,11 +21,11 @@ leaderboard yet — both are later phases.
   authorizer or new Cognito resources are created — this reuses the pool from
   [`deployment.md`](deployment.md).
 
-| Method | Path        | Purpose                                            |
-| ------ | ----------- | --------------------------------------------------- |
+| Method | Path        | Purpose                                              |
+| ------ | ----------- | ---------------------------------------------------- |
 | GET    | `/settings` | Fetch the caller's synced `VSSettings` (404 if none) |
 | PUT    | `/settings` | Upsert settings; last-write-wins via `updatedAt`     |
-| POST   | `/sessions` | Append one `SessionRecord`; recomputes `Stats`       |
+| POST   | `/sessions` | Append one `Sessionecord`; recomputes `Stats`        |
 | GET    | `/stats`    | Fetch the caller's `LifetimeStats` (zeroed if none)  |
 
 `POST /sessions` is idempotent on `completedAt` (a conditional put rejects
