@@ -1,5 +1,11 @@
 import { getStoredTokens, refreshAccessToken } from "@vs/auth";
-import type { LifetimeStats, SessionRecord, VSSettings } from "@vs/shared";
+import type {
+  LeaderboardEntry,
+  LifetimeStats,
+  SessionRecord,
+  UserProfile,
+  VSSettings,
+} from "@vs/shared";
 import { loadSettings, loadSettingsUpdatedAt, saveSettings } from "./storage";
 
 // Thin client for infra/vs-helper-backend (docs/vs-helper-backend.md). Sync is
@@ -78,6 +84,30 @@ export async function pushSession(
   if (!res || !res.ok) return null;
   const body = await res.json();
   return body.stats ?? null;
+}
+
+export async function pullProfile(): Promise<UserProfile | null> {
+  const res = await authedRequest("/profile");
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
+export async function pushProfile(
+  profile: UserProfile,
+): Promise<UserProfile | null> {
+  const res = await authedRequest("/profile", {
+    method: "PUT",
+    body: JSON.stringify(profile),
+  });
+  if (!res || !res.ok) return null;
+  return res.json();
+}
+
+export async function fetchLeaderboard(): Promise<LeaderboardEntry[] | null> {
+  const res = await authedRequest("/leaderboard");
+  if (!res || !res.ok) return null;
+  const body = await res.json();
+  return body.entries ?? null;
 }
 
 /**

@@ -25,3 +25,20 @@ export interface LifetimeStats {
   bestStreak: number;
   lastActiveDate: string; // "YYYY-MM-DD" ("" when no history)
 }
+
+// Leaderboard opt-in profile, keyed by the same Cognito `sub` as everything
+// else. Only `handle` + coarse counts are ever shown publicly — see
+// docs/vs-helper-architecture.md §11/§12.3.
+export interface UserProfile {
+  handle: string; // public leaderboard name; "" until the user sets one
+  leaderboardOptIn: boolean;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  handle: string;
+  totalSessions: number;
+  currentStreak: number;
+  bestStreak: number;
+  isYou: boolean;
+}

@@ -1,10 +1,16 @@
 import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from "aws-lambda";
 import { ConditionalCheckFailedException } from "@aws-sdk/client-dynamodb";
 import { GetCommand, PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { computeStats, type LifetimeStats, type SessionRecord } from "@vs/shared";
+import {
+  computeStats,
+  type LifetimeStats,
+  type SessionRecord,
+  type UserProfile,
+} from "@vs/shared";
 import { ddb, TABLES } from "../lib/ddb";
 import { requireUserId } from "../lib/auth";
 import { json } from "../lib/http";
+import { buildStatsItem } from "../lib/leaderboard";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^\d{2}:\d{2}$/;
@@ -49,15 +55,26 @@ export const handler: APIGatewayProxyHandlerV2WithJWTAuthorizer = async (
 };
 
 async function recomputeStats(userId: string, goalPerDay: number) {
-  const history = await queryAllSessions(userId);
+  const [history, profile] = await Promise.all([
+    queryAllSessions(userId),
+    readProfile(userId),
+  ]);
   const stats = computeStats(history, goalPerDay);
   await ddb.send(
     new PutCommand({
       TableName: TABLES.stats,
-      Item: { userId, ...stats },
+      Item: buildStatsItem(userId, stats, profile),
     }),
   );
   return stats;
+}
+
+async function readProfile(userId: string): Promise<UserProfile | null> {
+  const { Item } = await ddb.send(
+    new GetCommand({ TableName: TABLES.users, Key: { userId } }),
+  );
+  if (!Item) return null;
+  return { handle: Item.handle ?? "", leaderboardOptIn: !!Item.leaderboardOptIn };
 }
 
 const ZERO_STATS: LifetimeStats = {

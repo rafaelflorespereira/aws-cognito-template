@@ -15,9 +15,9 @@ export interface VsHelperBackendStackProps extends cdk.StackProps {
   userPoolClientId: string;
 }
 
-// Phase 2 cloud sync backend for apps/vs-helper (docs/vs-helper-architecture.md §12).
-// First pass scope: Settings + Sessions + Stats sync only — Reports and
-// UserAchievements stay on-device for now, and no leaderboard GSI is created yet.
+// Cloud sync backend for apps/vs-helper (docs/vs-helper-architecture.md §12).
+// Phase 2: Settings + Sessions + Stats sync — Reports and UserAchievements stay
+// on-device. Phase 3 (§11): opt-in leaderboard via Users table + Stats GSI.
 export class VsHelperBackendStack extends cdk.Stack {
   constructor(
     scope: Construct,
@@ -47,10 +47,28 @@ export class VsHelperBackendStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    // Phase 3 (docs/vs-helper-architecture.md §11): opted-in users are indexed
+    // by this GSI so the leaderboard is a single query, sorted by totalSessions
+    // descending. Rows without gsi1pk (the default) never appear in the index.
+    statsTable.addGlobalSecondaryIndex({
+      indexName: "gsi1",
+      partitionKey: { name: "gsi1pk", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "gsi1sk", type: dynamodb.AttributeType.NUMBER },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
+    // Profile + leaderboard opt-in, one row per user (docs §12.2 Users table).
+    const usersTable = new dynamodb.Table(this, "UsersTable", {
+      partitionKey: { name: "userId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
     const commonEnv = {
       SETTINGS_TABLE_NAME: settingsTable.tableName,
       SESSIONS_TABLE_NAME: sessionsTable.tableName,
       STATS_TABLE_NAME: statsTable.tableName,
+      USERS_TABLE_NAME: usersTable.tableName,
     };
 
     const commonProps: Partial<lambdaNode.NodejsFunctionProps> = {
@@ -73,12 +91,21 @@ export class VsHelperBackendStack extends cdk.Stack {
     const putSettingsFn = fn("PutSettingsFn");
     const postSessionFn = fn("PostSessionFn");
     const getStatsFn = fn("GetStatsFn");
+    const getProfileFn = fn("GetProfileFn");
+    const putProfileFn = fn("PutProfileFn");
+    const getLeaderboardFn = fn("GetLeaderboardFn");
 
     settingsTable.grantReadData(getSettingsFn);
     settingsTable.grantReadWriteData(putSettingsFn);
     sessionsTable.grantReadWriteData(postSessionFn);
     statsTable.grantReadWriteData(postSessionFn);
     statsTable.grantReadData(getStatsFn);
+    usersTable.grantReadData(postSessionFn); // reads opt-in/handle to keep Stats' GSI fields current
+
+    usersTable.grantReadData(getProfileFn);
+    usersTable.grantReadWriteData(putProfileFn);
+    statsTable.grantReadWriteData(putProfileFn); // keeps Stats' denormalized handle/gsi fields in sync
+    statsTable.grantReadData(getLeaderboardFn);
 
     // The RN app already holds a Cognito ID token (packages/auth); this
     // authorizer verifies it directly — no separate Lambda authorizer needed.
@@ -122,6 +149,27 @@ export class VsHelperBackendStack extends cdk.Stack {
       path: "/stats",
       methods: [apigwv2.HttpMethod.GET],
       integration: new HttpLambdaIntegration("GetStatsInt", getStatsFn),
+      authorizer,
+    });
+    httpApi.addRoutes({
+      path: "/profile",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new HttpLambdaIntegration("GetProfileInt", getProfileFn),
+      authorizer,
+    });
+    httpApi.addRoutes({
+      path: "/profile",
+      methods: [apigwv2.HttpMethod.PUT],
+      integration: new HttpLambdaIntegration("PutProfileInt", putProfileFn),
+      authorizer,
+    });
+    httpApi.addRoutes({
+      path: "/leaderboard",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new HttpLambdaIntegration(
+        "GetLeaderboardInt",
+        getLeaderboardFn,
+      ),
       authorizer,
     });
 
