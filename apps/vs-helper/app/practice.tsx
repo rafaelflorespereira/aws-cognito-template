@@ -91,23 +91,112 @@ export default function Practice() {
   const totalSec = Math.max(1, settings.sessionDurationSec);
   const elapsedRatio = (totalSec - remaining) / totalSec;
 
+  // Focus transition: once running, the countdown shrinks into a small badge
+  // pinned to the top of the screen and the illustration grows to take over
+  // as the main focus.
+  const focusAnim = useRef(new Animated.Value(0)).current;
+  const [illustrationHeight, setIllustrationHeight] = useState(240);
+  useEffect(() => {
+    const id = focusAnim.addListener(({ value }) => {
+      setIllustrationHeight(240 + value * 120);
+    });
+    return () => focusAnim.removeListener(id);
+  }, [focusAnim]);
+  useEffect(() => {
+    Animated.timing(focusAnim, {
+      toValue: running ? 1 : 0,
+      duration: 450,
+      useNativeDriver: false,
+    }).start();
+  }, [running, focusAnim]);
+
   return (
     <View style={styles.screen}>
       <PracticeBackground />
+
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.miniRing,
+          {
+            top: insets.top + 12,
+            opacity: focusAnim,
+            transform: [
+              {
+                scale: focusAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0.5, 1],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
+        <ProgressRing
+          size={88}
+          progress={elapsedRatio}
+          label={fmt(remaining)}
+          labelFontSize={20}
+          trackColor="rgba(255,255,255,0.15)"
+          labelColor="#fff"
+        />
+      </Animated.View>
+
       <ScrollView
         contentContainerStyle={[
           styles.container,
           { paddingTop: insets.top + 48 },
         ]}
       >
-        <ProgressRing
-          size={240}
-          progress={elapsedRatio}
-          label={fmt(remaining)}
-          labelFontSize={52}
-          trackColor="rgba(255,255,255,0.15)"
-          labelColor="#fff"
-        />
+        <Animated.View
+          style={[
+            styles.energyArea,
+            {
+              flex: focusAnim,
+              // Clears the mini countdown badge (top: insets.top+12, size
+              // 88) which sits above the scroll content (padded
+              // insets.top+48), so the centered illustration ends up with
+              // equal space above and below it. Driven by the same
+              // `focusAnim` as the ring collapse/illustration grow below so
+              // the layout settles in one continuous motion instead of
+              // snapping and re-animating.
+              paddingTop: focusAnim.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 12 + 88 - 48],
+              }),
+            },
+          ]}
+        >
+          <EnergyBodyIllustration
+            progress={elapsedRatio}
+            height={illustrationHeight}
+          />
+          <Text style={styles.energyCaption}>{t("practice.energyFlow")}</Text>
+        </Animated.View>
+
+        <Animated.View
+          pointerEvents={running ? "none" : "auto"}
+          style={{
+            height: focusAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [240, 0],
+            }),
+            opacity: focusAnim.interpolate({
+              inputRange: [0, 0.6, 1],
+              outputRange: [1, 0, 0],
+            }),
+            overflow: "hidden",
+          }}
+        >
+          <ProgressRing
+            size={240}
+            progress={elapsedRatio}
+            label={fmt(remaining)}
+            labelFontSize={52}
+            trackColor="rgba(255,255,255,0.15)"
+            labelColor="#fff"
+          />
+        </Animated.View>
 
         {!running ? (
           <TouchableOpacity
@@ -121,11 +210,6 @@ export default function Practice() {
             <Text style={styles.finishText}>{t("practice.finish")}</Text>
           </TouchableOpacity>
         )}
-
-        <View style={styles.energyArea}>
-          <EnergyBodyIllustration progress={elapsedRatio} height={240} />
-          <Text style={styles.energyCaption}>{t("practice.energyFlow")}</Text>
-        </View>
 
         {settings.showGuidedSteps && (
           <View style={styles.stepArea}>
@@ -185,10 +269,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   finishText: { color: "#e2e8f0", fontSize: 15, fontWeight: "600" },
+  miniRing: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    zIndex: 20,
+  },
   energyArea: {
     width: "100%",
     alignItems: "center",
-    marginTop: 8,
+    justifyContent: "center",
     gap: 8,
   },
   energyCaption: {
@@ -218,9 +309,16 @@ const styles = StyleSheet.create({
   },
   stepCard: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(165,180,252,0.35)",
     padding: 8,
+    shadowColor: "#818cf8",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 6,
   },
   cancel: { color: "#94a3b8", fontSize: 15, marginTop: 8 },
 });
