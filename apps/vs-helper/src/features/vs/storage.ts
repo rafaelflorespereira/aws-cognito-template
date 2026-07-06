@@ -8,6 +8,7 @@ import type {
 
 const KEYS = {
   settings: "vs.settings",
+  settingsUpdatedAt: "vs.settings.updatedAt",
   progress: "vs.progress",
   reports: "vs.reports",
   history: "vs.history",
@@ -45,8 +46,23 @@ export async function loadSettings(): Promise<VSSettings> {
   return { ...DEFAULT_SETTINGS, ...stored };
 }
 
-export async function saveSettings(s: VSSettings): Promise<void> {
-  await AsyncStorage.setItem(KEYS.settings, JSON.stringify(s));
+// Every local save is stamped with an `updatedAt` so cloud sync (features/vs/sync.ts)
+// can resolve last-write-wins across devices. Pass an explicit `updatedAt` when
+// applying a settings payload pulled from the server, so its own timestamp is
+// preserved instead of being overwritten with "now".
+export async function saveSettings(
+  s: VSSettings,
+  updatedAt: string = new Date().toISOString(),
+): Promise<string> {
+  await AsyncStorage.multiSet([
+    [KEYS.settings, JSON.stringify(s)],
+    [KEYS.settingsUpdatedAt, updatedAt],
+  ]);
+  return updatedAt;
+}
+
+export async function loadSettingsUpdatedAt(): Promise<string> {
+  return (await AsyncStorage.getItem(KEYS.settingsUpdatedAt)) ?? "";
 }
 
 export async function loadTodayProgress(): Promise<DailyProgress> {

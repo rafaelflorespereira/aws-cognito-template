@@ -90,16 +90,19 @@ the ideal companion. The app helps the user:
 └───────────────────────────────────────────────────────────────┘
                             │ (Phase 2, optional)
                             ▼
-              ┌──────────────────────────────┐
-              │  AWS (existing Cognito auth) │
-              │  + future: API GW + Lambda + │
-              │    DynamoDB for cloud sync   │
-              └──────────────────────────────┘
+              ┌────────────────────────────────────┐
+              │  AWS (existing Cognito auth)       │
+              │  + infra/vs-helper-backend:        │
+              │    API GW + Lambda + DynamoDB       │
+              │    for Settings/Sessions/Stats sync │
+              └────────────────────────────────────┘
 ```
 
 Phase 1 is **fully offline / on-device**. **Login is optional** (advisable for
 cross-session history); Cognito auth already exists but no longer gates the app.
-VS data stays local until the user signs in and a sync backend is added later.
+VS data stays local until the user signs in, at which point Settings and
+Sessions sync in the background — see [`vs-helper-backend.md`](vs-helper-backend.md)
+for what's shipped and what's still on-device only (Reports, richer stats, leaderboard).
 
 ## 4. Navigation & Screens
 
@@ -480,11 +483,11 @@ logs it before `promptAsync()` so you can register the exact string.
 
 ## 10. Phased Roadmap
 
-| Phase | Deliverable                                                                      |
-| ----- | -------------------------------------------------------------------------------- |
-| 1     | On-device MVP: settings, schedule, notifications, practice, report, gamification |
-| 2     | Cloud sync of history/stats (Cognito identity + API); richer statistics          |
-| 3     | Global **leaderboard**; situational reminders (the 20 situations); group mode    |
+| Phase | Deliverable                                                                      | Status |
+| ----- | --------------------------------------------------------------------------------- | ------ |
+| 1     | On-device MVP: settings, schedule, notifications, practice, report, gamification | Done |
+| 2     | Cloud sync of settings/sessions/stats (Cognito identity + API); richer statistics | Settings + Sessions + Stats sync shipped — see [`vs-helper-backend.md`](vs-helper-backend.md). Reports/achievements sync and richer statistics still open |
+| 3     | Global **leaderboard**; situational reminders (the 20 situations); group mode    | Not started |
 
 ## 11. Future: Leaderboard (scores window)
 
@@ -502,10 +505,14 @@ total Vibrational States done, current/best streak, days active — ranked.
 
 ## 12. Data & Database (cloud sync)
 
-Phase 1 keeps everything on-device (AsyncStorage). From **Phase 2**, signed-in
-users can sync to a backend (**API Gateway + Lambda + DynamoDB**), authorized by the
-Cognito ID token. Every record is owned by the user's Cognito `sub` (`userId`), and
-requests are scoped to that `sub` so a user can only touch their own partition.
+Phase 1 keeps everything on-device (AsyncStorage). **Phase 2** adds a backend
+(**API Gateway + Lambda + DynamoDB**, `infra/vs-helper-backend`) that signed-in
+users sync to, authorized by the Cognito ID token. Every record is owned by the
+user's Cognito `sub` (`userId`), and requests are scoped to that `sub` so a
+user can only touch their own partition. **Shipped so far**: `UserSettings`
+and `Sessions`/`Stats` (§12.2 below) — see
+[`vs-helper-backend.md`](vs-helper-backend.md) for the deployed API. `Users`,
+`Reports` and `UserAchievements` tables described below are **not yet built**.
 
 ### 12.1 Entity overview
 

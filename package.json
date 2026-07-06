@@ -5,10 +5,13 @@
   "workspaces": [
     "mobile",
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "infra/*"
   ],
   "scripts": {
     "vs": "npm run start --workspace vs-helper",
+    "vs:backend:synth": "npm run synth --workspace vs-helper-backend",
+    "vs:backend:deploy": "npm run deploy --workspace vs-helper-backend",
     "type-check": "npm run type-check --workspaces --if-present"
   }
 }

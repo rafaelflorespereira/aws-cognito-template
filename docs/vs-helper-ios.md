@@ -6,7 +6,8 @@ Cognito / Google setup see [`deployment.md`](deployment.md).
 
 > This is a **monorepo** (npm workspaces). Dependencies are hoisted to the root
 > `node_modules`, and Metro is configured to watch the workspace root so it can
-> resolve the shared `@vs/auth` package. Always install from the **repo root**.
+> resolve the shared `@vs/auth` and `@vs/shared` packages. Always install from
+> the **repo root**.
 
 ## Prerequisites
 
@@ -45,6 +46,7 @@ Fill in the OIDC values from the Cognito console
 | `EXPO_PUBLIC_USER_POOL_CLIENT_ID` | Public App Client ID (PKCE, no secret)      |
 | `EXPO_PUBLIC_LOGOUT_URI`          | `vshelper://` (optional)                    |
 | `EXPO_PUBLIC_APP_SCHEME`          | `vshelper` (matches `scheme` in `app.json`) |
+| `EXPO_PUBLIC_API_BASE_URL`        | Optional — cloud sync backend URL (see [`vs-helper-backend.md`](vs-helper-backend.md)); leave unset to run fully on-device |
 
 All `EXPO_PUBLIC_*` values are inlined into the bundle at build time — they are
 public, not secrets.

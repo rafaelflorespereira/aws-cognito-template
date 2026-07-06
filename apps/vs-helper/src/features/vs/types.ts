@@ -1,12 +1,6 @@
-export interface VSSettings {
-  timesPerDay: number;
-  firstTime: string; // "HH:mm"
-  lastTime: string; // "HH:mm"
-  sessionDurationSec: number; // length of one VS session; default 120 (2 min)
-  notificationsEnabled: boolean;
-  showGuidedSteps: boolean;
-  configured: boolean; // false until the user completes first-run onboarding
-}
+// Settings, session history and lifetime stats are shared with the cloud sync
+// backend (packages/vs-shared) so both sides agree on shape and streak logic.
+export type { VSSettings, SessionRecord, LifetimeStats } from "@vs/shared";
 
 export interface DailyProgress {
   date: string; // "YYYY-MM-DD" (local)
@@ -34,21 +28,6 @@ export interface SessionReport {
   wellbeing: number; // 1..5, how well the person feels after
   perceptions: string[]; // tingling, warmth, clairvoyance, none, ...
   notes?: string; // optional free text
-}
-
-// One row per completed session, appended across days (drives stats/streaks).
-export interface SessionRecord {
-  date: string; // "YYYY-MM-DD" (local)
-  slot: string; // "HH:mm"
-  completedAt: string; // ISO timestamp
-}
-
-export interface LifetimeStats {
-  totalSessions: number; // all VS ever completed
-  daysActive: number; // distinct days with >=1 session
-  currentStreak: number; // consecutive days meeting the daily goal
-  bestStreak: number;
-  lastActiveDate: string; // "YYYY-MM-DD" ("" when no history)
 }
 
 export interface Achievement {
