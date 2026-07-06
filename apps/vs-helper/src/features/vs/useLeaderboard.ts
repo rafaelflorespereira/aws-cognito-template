@@ -1,9 +1,32 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { LeaderboardEntry, UserProfile } from "@vs/shared";
 import { fetchLeaderboard, isSyncConfigured, pullProfile, pushProfile } from "./sync";
-import { getStoredTokens } from "@vs/auth";
+import { getStoredTokens, parseIdToken } from "@vs/auth";
 
 const DEFAULT_PROFILE: UserProfile = { handle: "", leaderboardOptIn: false };
+
+// HANDLE_RE in account.tsx / the backend only allows letters, digits, and
+// underscores — Google display names have spaces/accents/etc., so this is a
+// starting suggestion the user can still edit, not the saved value.
+function suggestHandle(googleName: string): string {
+  const cleaned = googleName
+    .replace(/\s+/g, "_")
+    .replace(/[^A-Za-z0-9_]/g, "")
+    .slice(0, 20);
+  return cleaned.length >= 3 ? cleaned : "";
+}
+
+async function fetchProfile(): Promise<UserProfile> {
+  const tokens = await getStoredTokens();
+  const profile = (await pullProfile()) ?? DEFAULT_PROFILE;
+  if (!profile.handle && tokens) {
+    const googleName = parseIdToken(tokens.idToken).name;
+    const suggested = googleName ? suggestHandle(googleName) : "";
+    if (suggested) return { ...profile, handle: suggested };
+  }
+  return profile;
+}
 
 export interface UseLeaderboard {
   loading: boolean;
@@ -19,48 +42,77 @@ export interface UseLeaderboard {
 }
 
 export function useLeaderboard(): UseLeaderboard {
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [signedIn, setSignedIn] = useState(false);
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  const checkSession = useCallback(async () => {
+    const tokens = await getStoredTokens();
+    setSignedIn(!!tokens && isSyncConfigured());
+    setCheckingSession(false);
+  }, []);
+
+  useEffect(() => {
+    void checkSession();
+  }, [checkSession]);
+
+  const profileQuery = useQuery({
+    queryKey: ["profile"],
+    queryFn: fetchProfile,
+    enabled: signedIn,
+  });
+
+  const leaderboardQuery = useQuery({
+    queryKey: ["leaderboard"],
+    queryFn: async () => (await fetchLeaderboard()) ?? [],
+    enabled: signedIn,
+  });
+
+  const mutation = useMutation({
+    mutationKey: ["profile", "save"],
+    mutationFn: async (partial: Partial<UserProfile>) => {
+      const current = profileQuery.data ?? DEFAULT_PROFILE;
+      const saved = await pushProfile({ ...current, ...partial });
+      if (!saved) throw new Error("Failed to save leaderboard profile");
+      return saved;
+    },
+    onSuccess: (saved) => {
+      queryClient.setQueryData(["profile"], saved);
+      void queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+    },
+  });
 
   const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const tokens = await getStoredTokens();
-      const hasSession = !!tokens && isSyncConfigured();
-      setSignedIn(hasSession);
-      if (!hasSession) {
-        setProfile(DEFAULT_PROFILE);
-        setEntries([]);
-        return;
-      }
-      const [p, e] = await Promise.all([pullProfile(), fetchLeaderboard()]);
-      setProfile(p ?? DEFAULT_PROFILE);
-      setEntries(e ?? []);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await checkSession();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["profile"] }),
+      queryClient.invalidateQueries({ queryKey: ["leaderboard"] }),
+    ]);
+  }, [checkSession, queryClient]);
 
   const saveProfile = useCallback(
     async (partial: Partial<UserProfile>) => {
-      const merged: UserProfile = { ...profile, ...partial };
-      const saved = await pushProfile(merged);
-      if (!saved) {
-        setError("save-failed");
+      try {
+        await mutation.mutateAsync(partial);
+        return true;
+      } catch {
         return false;
       }
-      setProfile(saved);
-      setError(null);
-      const e = await fetchLeaderboard();
-      if (e) setEntries(e);
-      return true;
     },
-    [profile],
+    [mutation],
   );
 
-  return { loading, signedIn, profile, entries, error, refresh, saveProfile };
+  const loading =
+    checkingSession ||
+    (signedIn && (profileQuery.isLoading || leaderboardQuery.isLoading));
+
+  return {
+    loading,
+    signedIn,
+    profile: signedIn ? profileQuery.data ?? DEFAULT_PROFILE : DEFAULT_PROFILE,
+    entries: signedIn ? leaderboardQuery.data ?? [] : [],
+    error: mutation.isError ? "save-failed" : null,
+    refresh,
+    saveProfile,
+  };
 }

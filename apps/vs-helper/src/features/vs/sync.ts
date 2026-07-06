@@ -44,15 +44,20 @@ async function authedRequest(
       },
     });
 
+  const method = init.method ?? "GET";
   try {
     let res = await attempt(tokens.idToken);
     if (res.status === 401 && tokens.refreshToken) {
       const refreshed = await refreshAccessToken(tokens.refreshToken);
       if (refreshed) res = await attempt(refreshed.idToken);
     }
+    if (!res.ok) {
+      const body = await res.clone().text().catch(() => "");
+      console.error(`[vs/sync] ${method} ${path} -> ${res.status}`, body);
+    }
     return res;
   } catch (err) {
-    console.warn(`[vs/sync] ${path} failed:`, err);
+    console.error(`[vs/sync] ${method} ${path} failed:`, err);
     return null;
   }
 }

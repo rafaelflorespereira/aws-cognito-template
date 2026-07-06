@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useI18n } from "@/features/i18n";
+import ProgressRing from "@/components/ProgressRing";
 
 interface Props {
   nextDue: Date | null;
@@ -43,7 +44,6 @@ export default function NextPracticeCard({
   }, [nextDue]);
 
   const msToNext = nextDue ? nextDue.getTime() - now.getTime() : null;
-  const minutesToNext = msToNext !== null ? Math.ceil(msToNext / 60000) : null;
   const due = msToNext !== null && msToNext <= 0;
   const alarm = msToNext !== null && msToNext > 0 && msToNext <= ALARM_MS;
 
@@ -74,38 +74,51 @@ export default function NextPracticeCard({
 
   const urgent = alarm || due;
 
-  let countdownText: string;
-  if (due) countdownText = t("next.dueNow");
-  else if (alarm && msToNext !== null)
-    countdownText = formatCountdown(msToNext);
-  else countdownText = t("next.inMinutes", { min: minutesToNext ?? 0 });
+  const countdownText =
+    due || msToNext === null ? t("next.dueNow") : formatCountdown(msToNext);
 
   return (
     <View style={[styles.card, urgent && styles.cardAlarm]}>
-      <Text style={styles.caption}>{t("next.caption")}</Text>
-      <Text style={[styles.time, urgent && styles.timeAlarm]}>
-        {nextDue ? formatClock(nextDue) : t("next.allDone")}
-      </Text>
+      <View style={styles.split}>
+        <View style={styles.progressCol}>
+          <ProgressRing
+            size={92}
+            progress={target ? completed / target : 0}
+            label={`${completed}/${target}`}
+            sublabel={t("stats.today")}
+          />
+        </View>
 
-      {nextDue ? (
-        <Animated.View
-          style={[
-            styles.countdownRow,
-            urgent && { transform: [{ scale: pulse }] },
-          ]}
-        >
-          {urgent ? <Ionicons name="alarm" size={22} color="#dc2626" /> : null}
-          <Text style={[styles.countdown, urgent && styles.countdownAlarm]}>
-            {countdownText}
+        <View style={styles.divider} />
+
+        <View style={styles.nextCol}>
+          <Text style={styles.caption}>{t("next.caption")}</Text>
+          <Text style={[styles.time, urgent && styles.timeAlarm]}>
+            {nextDue ? formatClock(nextDue) : t("next.allDone")}
           </Text>
-        </Animated.View>
-      ) : null}
 
-      {alarm ? <Text style={styles.getReady}>{t("next.getReady")}</Text> : null}
+          {nextDue ? (
+            <Animated.View
+              style={[
+                styles.countdownRow,
+                urgent && { transform: [{ scale: pulse }] },
+              ]}
+            >
+              {urgent ? (
+                <Ionicons name="alarm" size={20} color="#dc2626" />
+              ) : null}
+              <Text style={[styles.countdown, urgent && styles.countdownAlarm]}>
+                {countdownText}
+              </Text>
+            </Animated.View>
+          ) : null}
 
-      <Text style={styles.progress}>
-        {t("next.progress", { completed, target })}
-      </Text>
+          {alarm ? (
+            <Text style={styles.getReady}>{t("next.getReady")}</Text>
+          ) : null}
+        </View>
+      </View>
+
       {nextDue ? (
         <Text style={styles.spacing}>
           {t("next.spacing", { min: spacingMin })}
@@ -121,7 +134,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 24,
     alignItems: "center",
-    gap: 4,
+    gap: 12,
     width: "100%",
     maxWidth: 360,
     borderWidth: 2,
@@ -136,6 +149,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#fef2f2",
     borderColor: "#fca5a5",
   },
+  split: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+  },
+  progressCol: {
+    flex: 1,
+    alignItems: "center",
+  },
+  divider: {
+    width: 1,
+    alignSelf: "stretch",
+    backgroundColor: "#e2e8f0",
+    marginHorizontal: 16,
+  },
+  nextCol: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
   caption: {
     fontSize: 13,
     color: "#64748b",
@@ -143,7 +176,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   time: {
-    fontSize: 44,
+    fontSize: 32,
     fontWeight: "800",
     color: "#1e293b",
   },
@@ -160,23 +193,18 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     color: "#6366f1",
-  },
-  countdownAlarm: {
-    fontSize: 28,
-    color: "#dc2626",
     fontVariant: ["tabular-nums"],
   },
+  countdownAlarm: {
+    fontSize: 24,
+    color: "#dc2626",
+  },
   getReady: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "700",
     color: "#dc2626",
     textTransform: "uppercase",
     letterSpacing: 1,
-  },
-  progress: {
-    fontSize: 14,
-    color: "#6366f1",
-    fontWeight: "600",
   },
   spacing: {
     fontSize: 12,
