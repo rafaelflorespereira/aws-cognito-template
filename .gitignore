@@ -24,3 +24,4 @@ cdk.out/
 secrets.json
 aws-exports.js
 amplify_outputs.json
+google-service-account.json
