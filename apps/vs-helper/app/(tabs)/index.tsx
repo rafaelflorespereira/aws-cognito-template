@@ -70,7 +70,6 @@ export default function Dashboard() {
 
       <View style={styles.centerArea}>
         <Text style={styles.title}>{t("home.title")}</Text>
-
         <NextPracticeCard
           nextDue={nextDue}
           spacingMin={spacingMin}

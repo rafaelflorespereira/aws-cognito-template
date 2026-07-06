@@ -37,6 +37,7 @@ export const translations = {
     "practice.start": "Start",
     "practice.finish": "Finish now",
     "practice.cancel": "Cancel",
+    "practice.energyFlow": "Energy flows from head to feet",
 
     "settings.setupTitle": "Set up your practice",
     "settings.title": "Settings",
@@ -174,6 +175,7 @@ export const translations = {
     "practice.start": "Começar",
     "practice.finish": "Finalizar agora",
     "practice.cancel": "Cancelar",
+    "practice.energyFlow": "A energia flui da cabeça aos pés",
 
     "settings.setupTitle": "Configure sua prática",
     "settings.title": "Ajustes",
@@ -311,6 +313,7 @@ export const translations = {
     "practice.start": "Empezar",
     "practice.finish": "Finalizar ahora",
     "practice.cancel": "Cancelar",
+    "practice.energyFlow": "La energía fluye de la cabeza a los pies",
 
     "settings.setupTitle": "Configura tu práctica",
     "settings.title": "Ajustes",
@@ -448,6 +451,7 @@ export const translations = {
     "practice.start": "Commencer",
     "practice.finish": "Terminer maintenant",
     "practice.cancel": "Annuler",
+    "practice.energyFlow": "L'énergie circule de la tête aux pieds",
 
     "settings.setupTitle": "Configurez votre pratique",
     "settings.title": "Réglages",
@@ -587,6 +591,7 @@ export const translations = {
     "practice.start": "Inizia",
     "practice.finish": "Termina ora",
     "practice.cancel": "Annulla",
+    "practice.energyFlow": "L'energia scorre dalla testa ai piedi",
 
     "settings.setupTitle": "Configura la tua pratica",
     "settings.title": "Impostazioni",

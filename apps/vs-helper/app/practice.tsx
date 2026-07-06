@@ -15,6 +15,7 @@ import { useI18n, type TranslationKey } from "@/features/i18n";
 import PracticeStep from "@/components/PracticeStep";
 import PracticeBackground from "@/components/PracticeBackground";
 import ProgressRing from "@/components/ProgressRing";
+import EnergyBodyIllustration from "@/components/EnergyBodyIllustration";
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -121,6 +122,11 @@ export default function Practice() {
           </TouchableOpacity>
         )}
 
+        <View style={styles.energyArea}>
+          <EnergyBodyIllustration progress={elapsedRatio} height={240} />
+          <Text style={styles.energyCaption}>{t("practice.energyFlow")}</Text>
+        </View>
+
         {settings.showGuidedSteps && (
           <View style={styles.stepArea}>
             <View style={styles.dots}>
@@ -179,6 +185,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   finishText: { color: "#e2e8f0", fontSize: 15, fontWeight: "600" },
+  energyArea: {
+    width: "100%",
+    alignItems: "center",
+    marginTop: 8,
+    gap: 8,
+  },
+  energyCaption: {
+    color: "#94a3b8",
+    fontSize: 13,
+    fontWeight: "500",
+  },
   stepArea: {
     width: "100%",
     maxWidth: 420,
