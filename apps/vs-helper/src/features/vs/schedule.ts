@@ -1,3 +1,12 @@
+// Tally completed sessions per "YYYY-MM-DD" date, for the weekly progress strip.
+export function sessionCountsByDate(
+  history: { date: string }[],
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const r of history) counts[r.date] = (counts[r.date] ?? 0) + 1;
+  return counts;
+}
+
 export interface ScheduleConfig {
   timesPerDay: number; // e.g. 20
   firstTime: string; // "HH:mm" e.g. "07:00"

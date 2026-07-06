@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Stack, useRouter } from "expo-router";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { QueryClientProvider } from "@tanstack/react-query";
 import * as WebBrowser from "expo-web-browser";
+import { queryClient } from "@/lib/queryClient";
 import { loadSettings } from "@/features/vs/storage";
 import { I18nProvider, getInitialLang, type Lang } from "@/features/i18n";
 
@@ -39,15 +41,17 @@ export default function RootLayout() {
   }
 
   return (
-    <SafeAreaProvider>
-      <I18nProvider initialLang={lang}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="practice" />
-          <Stack.Screen name="report" />
-        </Stack>
-      </I18nProvider>
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider>
+        <I18nProvider initialLang={lang}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="practice" />
+            <Stack.Screen name="report" />
+          </Stack>
+        </I18nProvider>
+      </SafeAreaProvider>
+    </QueryClientProvider>
   );
 }
 

@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -12,6 +13,8 @@ import { useSchedule } from "@/features/vs/useSchedule";
 import { MANEUVERS } from "@/features/vs/content";
 import { useI18n, type TranslationKey } from "@/features/i18n";
 import PracticeStep from "@/components/PracticeStep";
+import PracticeBackground from "@/components/PracticeBackground";
+import ProgressRing from "@/components/ProgressRing";
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -68,64 +71,98 @@ export default function Practice() {
       ),
     ),
   );
+  const current = MANEUVERS[activeStep - 1];
+
+  // Crossfade the step card in whenever the active maneuver changes.
+  const fade = useRef(new Animated.Value(1)).current;
+  const prevStep = useRef(activeStep);
+  useEffect(() => {
+    if (prevStep.current === activeStep) return;
+    prevStep.current = activeStep;
+    fade.setValue(0);
+    Animated.timing(fade, {
+      toValue: 1,
+      duration: 350,
+      useNativeDriver: true,
+    }).start();
+  }, [activeStep, fade]);
+
+  const totalSec = Math.max(1, settings.sessionDurationSec);
+  const elapsedRatio = (totalSec - remaining) / totalSec;
 
   return (
-    <ScrollView
-      contentContainerStyle={[
-        styles.container,
-        { paddingTop: insets.top + 48 },
-      ]}
-    >
-      <Text style={styles.timer}>{fmt(remaining)}</Text>
+    <View style={styles.screen}>
+      <PracticeBackground />
+      <ScrollView
+        contentContainerStyle={[
+          styles.container,
+          { paddingTop: insets.top + 48 },
+        ]}
+      >
+        <ProgressRing
+          size={240}
+          progress={elapsedRatio}
+          label={fmt(remaining)}
+          labelFontSize={52}
+          trackColor="rgba(255,255,255,0.15)"
+          labelColor="#fff"
+        />
 
-      {!running ? (
-        <TouchableOpacity
-          style={styles.startBtn}
-          onPress={() => setRunning(true)}
-        >
-          <Text style={styles.startText}>{t("practice.start")}</Text>
+        {!running ? (
+          <TouchableOpacity
+            style={styles.startBtn}
+            onPress={() => setRunning(true)}
+          >
+            <Text style={styles.startText}>{t("practice.start")}</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.finishBtn} onPress={finish}>
+            <Text style={styles.finishText}>{t("practice.finish")}</Text>
+          </TouchableOpacity>
+        )}
+
+        {settings.showGuidedSteps && (
+          <View style={styles.stepArea}>
+            <View style={styles.dots}>
+              {MANEUVERS.map((m) => (
+                <View
+                  key={m.n}
+                  style={[styles.dot, m.n <= activeStep && styles.dotDone]}
+                />
+              ))}
+            </View>
+
+            <Animated.View style={[styles.stepCard, { opacity: fade }]}>
+              <PracticeStep
+                key={current.n}
+                n={current.n}
+                title={t(`maneuver.${current.n}.title` as TranslationKey)}
+                text={t(`maneuver.${current.n}.text` as TranslationKey)}
+                active
+              />
+            </Animated.View>
+          </View>
+        )}
+
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text style={styles.cancel}>{t("practice.cancel")}</Text>
         </TouchableOpacity>
-      ) : (
-        <TouchableOpacity style={styles.finishBtn} onPress={finish}>
-          <Text style={styles.finishText}>{t("practice.finish")}</Text>
-        </TouchableOpacity>
-      )}
-
-      {settings.showGuidedSteps && (
-        <View style={styles.steps}>
-          {MANEUVERS.map((m) => (
-            <PracticeStep
-              key={m.n}
-              n={m.n}
-              title={t(`maneuver.${m.n}.title` as TranslationKey)}
-              text={t(`maneuver.${m.n}.text` as TranslationKey)}
-              active={running && m.n === activeStep}
-            />
-          ))}
-        </View>
-      )}
-
-      <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.cancel}>{t("practice.cancel")}</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#0f172a",
+  },
   container: {
     flexGrow: 1,
     alignItems: "center",
-    backgroundColor: "#0f172a",
     padding: 24,
     gap: 16,
     paddingTop: 72,
-  },
-  timer: {
-    fontSize: 64,
-    fontWeight: "800",
-    color: "#fff",
-    fontVariant: ["tabular-nums"],
   },
   startBtn: {
     backgroundColor: "#6366f1",
@@ -142,13 +179,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   finishText: { color: "#e2e8f0", fontSize: 15, fontWeight: "600" },
-  steps: {
+  stepArea: {
     width: "100%",
     maxWidth: 420,
+    alignItems: "center",
+    marginTop: 8,
+    gap: 12,
+  },
+  dots: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#334155",
+  },
+  dotDone: {
+    backgroundColor: "#6366f1",
+  },
+  stepCard: {
+    width: "100%",
     backgroundColor: "#fff",
     borderRadius: 16,
     padding: 8,
-    marginTop: 8,
   },
   cancel: { color: "#94a3b8", fontSize: 15, marginTop: 8 },
 });
