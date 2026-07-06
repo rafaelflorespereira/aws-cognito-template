@@ -17,6 +17,9 @@ function todayStr(d: Date = new Date()): string {
  * Aggregates the flat session history into lifetime stats. A day counts toward a
  * streak when it reaches `goalPerDay` completed sessions. The current streak is
  * the run of qualifying days ending today (or yesterday, if today isn't done yet).
+ *
+ * Pure and platform-agnostic so it can run both on-device (app) and in the
+ * cloud sync Lambda (recomputed server-side after each session sync).
  */
 export function computeStats(
   history: SessionRecord[],

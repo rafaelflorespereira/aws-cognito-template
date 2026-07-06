@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { VSSettings, DailyProgress, SessionReport } from "./types";
+import type {
+  VSSettings,
+  DailyProgress,
+  SessionReport,
+  SessionRecord,
+} from "./types";
 import {
   DEFAULT_SETTINGS,
   loadSettings,
@@ -17,6 +22,7 @@ import {
   currentSpacingMin,
 } from "./schedule";
 import { rescheduleAll, cancelAll, requestPermission } from "./notifications";
+import { pushSession, pushSettings, syncSettingsNow } from "./sync";
 import { useI18n } from "../i18n";
 
 export interface UseSchedule {
@@ -60,6 +66,15 @@ export function useSchedule(): UseSchedule {
     refresh().finally(() => setLoading(false));
   }, [refresh]);
 
+  // Reconcile with the cloud sync backend once the initial local load settles
+  // (no-op if signed out or sync isn't configured — see features/vs/sync.ts).
+  useEffect(() => {
+    if (loading) return;
+    syncSettingsNow().then((applied) => {
+      if (applied) setSettings(applied);
+    });
+  }, [loading]);
+
   // Tick every 30s so `next` stays fresh.
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 30_000);
@@ -98,7 +113,7 @@ export function useSchedule(): UseSchedule {
     async (partial: Partial<VSSettings>) => {
       const merged: VSSettings = { ...settings, ...partial };
       setSettings(merged);
-      await saveSettings(merged);
+      const updatedAt = await saveSettings(merged);
 
       const newSlots = computeSlots(merged);
       if (merged.notificationsEnabled) {
@@ -111,6 +126,8 @@ export function useSchedule(): UseSchedule {
       } else {
         await cancelAll();
       }
+
+      void pushSettings(merged, updatedAt);
     },
     [settings, t],
   );
@@ -120,15 +137,17 @@ export function useSchedule(): UseSchedule {
       const slot = opts?.slot ?? next ?? slots[progress.completed] ?? "manual";
       const updated = await markSlotDone(slot);
       setProgress(updated);
-      await appendSessionRecord({
+      const record: SessionRecord = {
         date: updated.date,
         slot,
         completedAt: new Date().toISOString(),
-      });
+      };
+      await appendSessionRecord(record);
       if (opts?.report) await saveReport(opts.report);
+      void pushSession(record, settings.timesPerDay);
       return slot;
     },
-    [next, slots, progress.completed],
+    [next, slots, progress.completed, settings.timesPerDay],
   );
 
   return {

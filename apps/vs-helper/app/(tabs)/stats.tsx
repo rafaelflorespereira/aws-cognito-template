@@ -8,7 +8,7 @@ import {
   loadSettings,
   loadTodayProgress,
 } from "@/features/vs/storage";
-import { computeStats } from "@/features/vs/stats";
+import { computeStats } from "@vs/shared";
 import { currentSpacingMin } from "@/features/vs/schedule";
 import { ACHIEVEMENTS, evaluateAchievements } from "@/features/vs/achievements";
 import { useI18n } from "@/features/i18n";

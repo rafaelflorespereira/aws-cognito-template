@@ -15,6 +15,7 @@ import {
   type AuthUser,
 } from "@vs/auth";
 import { useI18n } from "@/features/i18n";
+import { syncSettingsNow } from "@/features/vs/sync";
 
 export default function Account() {
   const { t } = useI18n();
@@ -43,7 +44,12 @@ export default function Account() {
   useEffect(() => {
     if (response?.type !== "success" || !request?.codeVerifier) return;
     exchangeCodeForTokens(response.params.code, request.codeVerifier)
-      .then((t) => setUser(parseIdToken(t.idToken)))
+      .then((t) => {
+        setUser(parseIdToken(t.idToken));
+        // Pull/push settings now that we have a token; other screens' own
+        // useSchedule() picks up the merged result on their next focus.
+        void syncSettingsNow();
+      })
       .catch((err) => console.error("[auth] token exchange failed:", err));
   }, [response, request]);
 
