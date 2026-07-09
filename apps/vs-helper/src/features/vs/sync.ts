@@ -6,7 +6,15 @@ import type {
   UserProfile,
   VSSettings,
 } from "@vs/shared";
-import { loadSettings, loadSettingsUpdatedAt, saveSettings } from "./storage";
+import {
+  buildTodayProgressFromHistory,
+  loadHistory,
+  loadSettings,
+  loadSettingsUpdatedAt,
+  saveHistory,
+  saveSettings,
+  saveTodayProgress,
+} from "./storage";
 
 // Thin client for infra/vs-helper-backend (docs/vs-helper-backend.md). Sync is
 // entirely best-effort: signed-out, unconfigured, or offline all degrade to a
@@ -17,6 +25,30 @@ const BASE_URL = (process.env.EXPO_PUBLIC_API_BASE_URL ?? "").replace(
   "",
 );
 
+export type SyncErrorCode =
+  | "unconfigured"
+  | "signed_out"
+  | "network"
+  | "unauthorized"
+  | "forbidden"
+  | "not_found"
+  | "bad_request"
+  | "server"
+  | "invalid_response";
+
+export interface SyncError {
+  code: SyncErrorCode;
+  method: string;
+  path: string;
+  message: string;
+  status?: number;
+  details?: string;
+}
+
+export type SyncResult<T> =
+  | { data: T; error: null }
+  | { data: null; error: SyncError };
+
 export function isSyncConfigured(): boolean {
   return BASE_URL.length > 0;
 }
@@ -25,14 +57,73 @@ interface SyncedSettings extends VSSettings {
   updatedAt: string;
 }
 
+function mapStatusToCode(status: number): SyncErrorCode {
+  if (status === 400) return "bad_request";
+  if (status === 401) return "unauthorized";
+  if (status === 403) return "forbidden";
+  if (status === 404) return "not_found";
+  if (status >= 500) return "server";
+  return "bad_request";
+}
+
+function logSyncError(error: SyncError): void {
+  const status = error.status ? ` ${error.status}` : "";
+  const details = error.details ? ` ${error.details}` : "";
+  console.error(
+    `[vs/sync] ${error.method} ${error.path} -> ${error.code}${status}: ${error.message}${details}`,
+  );
+}
+
+async function parseJson<T>(
+  response: Response,
+  method: string,
+  path: string,
+): Promise<SyncResult<T>> {
+  try {
+    return { data: (await response.json()) as T, error: null };
+  } catch {
+    return {
+      data: null,
+      error: {
+        code: "invalid_response",
+        method,
+        path,
+        status: response.status,
+        message: "Response body is not valid JSON",
+      },
+    };
+  }
+}
+
 async function authedRequest(
   path: string,
   init: RequestInit = {},
-): Promise<Response | null> {
-  if (!isSyncConfigured()) return null;
+): Promise<SyncResult<Response>> {
+  const method = init.method ?? "GET";
+  if (!isSyncConfigured()) {
+    return {
+      data: null,
+      error: {
+        code: "unconfigured",
+        method,
+        path,
+        message: "Sync API base URL is not configured",
+      },
+    };
+  }
 
   const tokens = await getStoredTokens();
-  if (!tokens) return null; // signed out — sync is opt-in
+  if (!tokens) {
+    return {
+      data: null,
+      error: {
+        code: "signed_out",
+        method,
+        path,
+        message: "User is signed out",
+      },
+    };
+  }
 
   const attempt = (idToken: string) =>
     fetch(`${BASE_URL}${path}`, {
@@ -44,7 +135,6 @@ async function authedRequest(
       },
     });
 
-  const method = init.method ?? "GET";
   try {
     let res = await attempt(tokens.idToken);
     if (res.status === 401 && tokens.refreshToken) {
@@ -53,66 +143,181 @@ async function authedRequest(
     }
     if (!res.ok) {
       const body = await res.clone().text().catch(() => "");
-      console.error(`[vs/sync] ${method} ${path} -> ${res.status}`, body);
+      return {
+        data: null,
+        error: {
+          code: mapStatusToCode(res.status),
+          method,
+          path,
+          status: res.status,
+          message: "Request failed",
+          details: body,
+        },
+      };
     }
-    return res;
-  } catch (err) {
-    console.error(`[vs/sync] ${method} ${path} failed:`, err);
-    return null;
+    return { data: res, error: null };
+  } catch {
+    return {
+      data: null,
+      error: {
+        code: "network",
+        method,
+        path,
+        message: "Network request failed",
+      },
+    };
   }
 }
 
 async function pullSettings(): Promise<SyncedSettings | null> {
-  const res = await authedRequest("/settings");
-  if (!res || !res.ok) return null;
-  return res.json();
+  const req = await authedRequest("/settings");
+  if (req.error) {
+    logSyncError(req.error);
+    return null;
+  }
+  const parsed = await parseJson<SyncedSettings>(req.data, "GET", "/settings");
+  if (parsed.error) {
+    logSyncError(parsed.error);
+    return null;
+  }
+  return parsed.data;
 }
 
 export async function pushSettings(
   settings: VSSettings,
   updatedAt: string,
 ): Promise<void> {
-  await authedRequest("/settings", {
+  const req = await authedRequest("/settings", {
     method: "PUT",
     body: JSON.stringify({ ...settings, updatedAt }),
   });
+  if (req.error) logSyncError(req.error);
 }
 
 export async function pushSession(
   record: SessionRecord,
   goalPerDay: number,
 ): Promise<LifetimeStats | null> {
-  const res = await authedRequest("/sessions", {
+  const req = await authedRequest("/sessions", {
     method: "POST",
     body: JSON.stringify({ ...record, goalPerDay }),
   });
-  if (!res || !res.ok) return null;
-  const body = await res.json();
-  return body.stats ?? null;
+  if (req.error) {
+    logSyncError(req.error);
+    return null;
+  }
+  const parsed = await parseJson<{ stats?: LifetimeStats }>(
+    req.data,
+    "POST",
+    "/sessions",
+  );
+  if (parsed.error) {
+    logSyncError(parsed.error);
+    return null;
+  }
+  return parsed.data?.stats ?? null;
+}
+
+export async function pullProfileResult(): Promise<SyncResult<UserProfile | null>> {
+  const req = await authedRequest("/profile");
+  if (req.error) {
+    if (req.error.code === "not_found") return { data: null, error: null };
+    return { data: null, error: req.error };
+  }
+  return parseJson<UserProfile>(req.data, "GET", "/profile");
+}
+
+export async function pushProfileResult(
+  profile: UserProfile,
+): Promise<SyncResult<UserProfile>> {
+  const req = await authedRequest("/profile", {
+    method: "PUT",
+    body: JSON.stringify(profile),
+  });
+  if (req.error) return { data: null, error: req.error };
+  return parseJson<UserProfile>(req.data, "PUT", "/profile");
+}
+
+export async function fetchLeaderboardResult(): Promise<
+  SyncResult<LeaderboardEntry[]>
+> {
+  const req = await authedRequest("/leaderboard");
+  if (req.error) return { data: null, error: req.error };
+  const parsed = await parseJson<{ entries?: LeaderboardEntry[] }>(
+    req.data,
+    "GET",
+    "/leaderboard",
+  );
+  if (parsed.error) return { data: null, error: parsed.error };
+  return { data: parsed.data?.entries ?? [], error: null };
+}
+
+export async function fetchSessionsResult(): Promise<SyncResult<SessionRecord[]>> {
+  const req = await authedRequest("/sessions");
+  if (req.error) return { data: null, error: req.error };
+  const parsed = await parseJson<{ records?: SessionRecord[] }>(
+    req.data,
+    "GET",
+    "/sessions",
+  );
+  if (parsed.error) return { data: null, error: parsed.error };
+  return { data: parsed.data?.records ?? [], error: null };
 }
 
 export async function pullProfile(): Promise<UserProfile | null> {
-  const res = await authedRequest("/profile");
-  if (!res || !res.ok) return null;
-  return res.json();
+  const result = await pullProfileResult();
+  if (result.error) {
+    logSyncError(result.error);
+    return null;
+  }
+  return result.data;
 }
 
 export async function pushProfile(
   profile: UserProfile,
 ): Promise<UserProfile | null> {
-  const res = await authedRequest("/profile", {
-    method: "PUT",
-    body: JSON.stringify(profile),
-  });
-  if (!res || !res.ok) return null;
-  return res.json();
+  const result = await pushProfileResult(profile);
+  if (result.error) {
+    logSyncError(result.error);
+    return null;
+  }
+  return result.data;
 }
 
 export async function fetchLeaderboard(): Promise<LeaderboardEntry[] | null> {
-  const res = await authedRequest("/leaderboard");
-  if (!res || !res.ok) return null;
-  const body = await res.json();
-  return body.entries ?? null;
+  const result = await fetchLeaderboardResult();
+  if (result.error) {
+    logSyncError(result.error);
+    return null;
+  }
+  return result.data;
+}
+
+function mergeSessionHistory(
+  local: SessionRecord[],
+  remote: SessionRecord[],
+): SessionRecord[] {
+  const byCompletedAt = new Map<string, SessionRecord>();
+  for (const rec of [...local, ...remote]) {
+    byCompletedAt.set(rec.completedAt, rec);
+  }
+  return Array.from(byCompletedAt.values()).sort((a, b) =>
+    a.completedAt.localeCompare(b.completedAt),
+  );
+}
+
+export async function syncSessionHistoryNow(): Promise<void> {
+  const remote = await fetchSessionsResult();
+  if (remote.error) {
+    if (remote.error.code !== "signed_out" && remote.error.code !== "unconfigured") {
+      logSyncError(remote.error);
+    }
+    return;
+  }
+  const local = await loadHistory();
+  const merged = mergeSessionHistory(local, remote.data);
+  await saveHistory(merged);
+  await saveTodayProgress(buildTodayProgressFromHistory(merged));
 }
 
 /**

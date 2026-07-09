@@ -23,7 +23,7 @@ import {
   type AuthUser,
 } from "@vs/auth";
 import { useI18n } from "@/features/i18n";
-import { syncSettingsNow } from "@/features/vs/sync";
+import { syncSessionHistoryNow, syncSettingsNow } from "@/features/vs/sync";
 import { useLeaderboard } from "@/features/vs/useLeaderboard";
 
 const HANDLE_RE = /^[A-Za-z0-9_]{3,20}$/;
@@ -73,6 +73,7 @@ export default function Account() {
         // Pull/push settings now that we have a token; other screens' own
         // useSchedule() picks up the merged result on their next focus.
         void syncSettingsNow();
+        void syncSessionHistoryNow();
         void refreshLeaderboard();
       })
       .catch((err) => console.error("[auth] token exchange failed:", err));
@@ -98,9 +99,15 @@ export default function Account() {
       return;
     }
     setSaving(true);
-    const ok = await saveProfile({ handle, leaderboardOptIn: optIn });
+    const error = await saveProfile({ handle, leaderboardOptIn: optIn });
     setSaving(false);
-    if (!ok) setFormError(t("leaderboard.saveFailed"));
+    if (error) {
+      if (error.code === "unauthorized" || error.code === "signed_out") {
+        setFormError(t("leaderboard.authRequired"));
+      } else {
+        setFormError(t("leaderboard.saveFailed"));
+      }
+    }
   }
 
   return (

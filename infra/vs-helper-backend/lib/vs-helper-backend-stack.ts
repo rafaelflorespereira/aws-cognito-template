@@ -89,6 +89,7 @@ export class VsHelperBackendStack extends cdk.Stack {
 
     const getSettingsFn = fn("GetSettingsFn");
     const putSettingsFn = fn("PutSettingsFn");
+    const getSessionsFn = fn("GetSessionsFn");
     const postSessionFn = fn("PostSessionFn");
     const getStatsFn = fn("GetStatsFn");
     const getProfileFn = fn("GetProfileFn");
@@ -97,6 +98,7 @@ export class VsHelperBackendStack extends cdk.Stack {
 
     settingsTable.grantReadData(getSettingsFn);
     settingsTable.grantReadWriteData(putSettingsFn);
+    sessionsTable.grantReadData(getSessionsFn);
     sessionsTable.grantReadWriteData(postSessionFn);
     statsTable.grantReadWriteData(postSessionFn);
     statsTable.grantReadData(getStatsFn);
@@ -137,6 +139,12 @@ export class VsHelperBackendStack extends cdk.Stack {
       path: "/settings",
       methods: [apigwv2.HttpMethod.PUT],
       integration: new HttpLambdaIntegration("PutSettingsInt", putSettingsFn),
+      authorizer,
+    });
+    httpApi.addRoutes({
+      path: "/sessions",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new HttpLambdaIntegration("GetSessionsInt", getSessionsFn),
       authorizer,
     });
     httpApi.addRoutes({

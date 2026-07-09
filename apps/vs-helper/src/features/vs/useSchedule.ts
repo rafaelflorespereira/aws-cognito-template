@@ -22,7 +22,12 @@ import {
   currentSpacingMin,
 } from "./schedule";
 import { rescheduleAll, cancelAll, requestPermission } from "./notifications";
-import { pushSession, pushSettings, syncSettingsNow } from "./sync";
+import {
+  pushSession,
+  pushSettings,
+  syncSessionHistoryNow,
+  syncSettingsNow,
+} from "./sync";
 import { useI18n } from "../i18n";
 
 export interface UseSchedule {
@@ -70,10 +75,11 @@ export function useSchedule(): UseSchedule {
   // (no-op if signed out or sync isn't configured — see features/vs/sync.ts).
   useEffect(() => {
     if (loading) return;
-    syncSettingsNow().then((applied) => {
+    Promise.all([syncSettingsNow(), syncSessionHistoryNow()]).then(([applied]) => {
       if (applied) setSettings(applied);
+      void refresh();
     });
-  }, [loading]);
+  }, [loading, refresh]);
 
   // Tick every 30s so `next` stays fresh.
   useEffect(() => {

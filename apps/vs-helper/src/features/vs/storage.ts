@@ -110,3 +110,30 @@ export async function appendSessionRecord(r: SessionRecord): Promise<void> {
 export async function loadHistory(): Promise<SessionRecord[]> {
   return readJSON<SessionRecord[]>(KEYS.history, []);
 }
+
+export async function saveHistory(history: SessionRecord[]): Promise<void> {
+  await AsyncStorage.setItem(KEYS.history, JSON.stringify(history));
+}
+
+export function buildTodayProgressFromHistory(
+  history: SessionRecord[],
+  day: string = todayStr(),
+): DailyProgress {
+  const todayRecords = history
+    .filter((r) => r.date === day)
+    .sort((a, b) => a.completedAt.localeCompare(b.completedAt));
+  const completedSlots = todayRecords.map((r) => r.slot);
+  return {
+    date: day,
+    completed: completedSlots.length,
+    completedSlots,
+    lastCompletedAt:
+      todayRecords.length > 0
+        ? todayRecords[todayRecords.length - 1].completedAt
+        : null,
+  };
+}
+
+export async function saveTodayProgress(progress: DailyProgress): Promise<void> {
+  await AsyncStorage.setItem(KEYS.progress, JSON.stringify(progress));
+}

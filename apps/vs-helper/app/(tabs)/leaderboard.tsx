@@ -19,7 +19,7 @@ export default function Leaderboard() {
   const { t } = useI18n();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { loading, signedIn, entries, refresh } = useLeaderboard();
+  const { loading, signedIn, entries, error, refresh } = useLeaderboard();
 
   useFocusEffect(
     useCallback(() => {
@@ -59,7 +59,11 @@ export default function Leaderboard() {
     >
       <Text style={styles.title}>{t("leaderboard.title")}</Text>
 
-      {entries.length === 0 ? (
+      {error ? (
+        <Text style={styles.error}>
+          {`${t("leaderboard.loadFailed")} (${error.code})`}
+        </Text>
+      ) : entries.length === 0 ? (
         <Text style={styles.empty}>{t("leaderboard.empty")}</Text>
       ) : (
         <>
@@ -107,5 +111,6 @@ const styles = StyleSheet.create({
   },
   saveText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   list: { gap: 8 },
+  error: { fontSize: 14, color: "#ef4444", fontWeight: "600" },
   empty: { fontSize: 14, color: "#94a3b8" },
 });

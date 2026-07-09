@@ -80,6 +80,7 @@ export const translations = {
     "leaderboard.handleInvalid":
       "Handle must be 3-20 letters, digits, or underscores.",
     "leaderboard.saveFailed": "Couldn't save — please try again.",
+    "leaderboard.authRequired": "Please sign in again to save profile changes.",
     "leaderboard.saving": "Saving...",
     "leaderboard.save": "Save",
     "leaderboard.colRank": "#",
@@ -87,6 +88,7 @@ export const translations = {
     "leaderboard.colStreak": "Streak",
     "leaderboard.colTotal": "Total",
     "leaderboard.empty": "No one has joined the leaderboard yet.",
+    "leaderboard.loadFailed": "Couldn't load leaderboard right now.",
     "leaderboard.signInBlurb":
       "Sign in to join the leaderboard and see how your practice compares.",
     "leaderboard.goToAccount": "Go to Account",
@@ -218,6 +220,8 @@ export const translations = {
     "leaderboard.handleInvalid":
       "O nome deve ter 3-20 letras, números ou underscores.",
     "leaderboard.saveFailed": "Não foi possível salvar — tente novamente.",
+    "leaderboard.authRequired":
+      "Faça login novamente para salvar as alterações do perfil.",
     "leaderboard.saving": "Salvando...",
     "leaderboard.save": "Salvar",
     "leaderboard.colRank": "#",
@@ -225,6 +229,7 @@ export const translations = {
     "leaderboard.colStreak": "Sequência",
     "leaderboard.colTotal": "Total",
     "leaderboard.empty": "Ninguém entrou no ranking ainda.",
+    "leaderboard.loadFailed": "Não foi possível carregar o ranking agora.",
     "leaderboard.signInBlurb":
       "Entre para participar do ranking e ver como sua prática se compara.",
     "leaderboard.goToAccount": "Ir para Conta",
@@ -356,6 +361,8 @@ export const translations = {
     "leaderboard.handleInvalid":
       "El nombre debe tener 3-20 letras, números o guiones bajos.",
     "leaderboard.saveFailed": "No se pudo guardar — inténtalo de nuevo.",
+    "leaderboard.authRequired":
+      "Vuelve a iniciar sesión para guardar los cambios del perfil.",
     "leaderboard.saving": "Guardando...",
     "leaderboard.save": "Guardar",
     "leaderboard.colRank": "#",
@@ -363,6 +370,8 @@ export const translations = {
     "leaderboard.colStreak": "Racha",
     "leaderboard.colTotal": "Total",
     "leaderboard.empty": "Todavía nadie se ha unido a la clasificación.",
+    "leaderboard.loadFailed":
+      "No se pudo cargar la clasificación en este momento.",
     "leaderboard.signInBlurb":
       "Inicia sesión para unirte a la clasificación y ver cómo se compara tu práctica.",
     "leaderboard.goToAccount": "Ir a Cuenta",
@@ -494,6 +503,8 @@ export const translations = {
     "leaderboard.handleInvalid":
       "Le pseudo doit comporter 3 à 20 lettres, chiffres ou underscores.",
     "leaderboard.saveFailed": "Échec de l'enregistrement — réessayez.",
+    "leaderboard.authRequired":
+      "Reconnectez-vous pour enregistrer les modifications du profil.",
     "leaderboard.saving": "Enregistrement...",
     "leaderboard.save": "Enregistrer",
     "leaderboard.colRank": "#",
@@ -501,6 +512,8 @@ export const translations = {
     "leaderboard.colStreak": "Série",
     "leaderboard.colTotal": "Total",
     "leaderboard.empty": "Personne n'a encore rejoint le classement.",
+    "leaderboard.loadFailed":
+      "Impossible de charger le classement pour le moment.",
     "leaderboard.signInBlurb":
       "Connectez-vous pour rejoindre le classement et comparer votre pratique.",
     "leaderboard.goToAccount": "Aller au Compte",
@@ -634,6 +647,8 @@ export const translations = {
     "leaderboard.handleInvalid":
       "Il nome deve avere 3-20 lettere, numeri o underscore.",
     "leaderboard.saveFailed": "Salvataggio non riuscito — riprova.",
+    "leaderboard.authRequired":
+      "Accedi di nuovo per salvare le modifiche del profilo.",
     "leaderboard.saving": "Salvataggio...",
     "leaderboard.save": "Salva",
     "leaderboard.colRank": "#",
@@ -641,6 +656,8 @@ export const translations = {
     "leaderboard.colStreak": "Serie",
     "leaderboard.colTotal": "Totale",
     "leaderboard.empty": "Nessuno si è ancora unito alla classifica.",
+    "leaderboard.loadFailed":
+      "Impossibile caricare la classifica in questo momento.",
     "leaderboard.signInBlurb":
       "Accedi per unirti alla classifica e vedere come si confronta la tua pratica.",
     "leaderboard.goToAccount": "Vai ad Account",

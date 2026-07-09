@@ -27,6 +27,7 @@ situational reminders and group mode are not built.
 | ------ | ------------- | ------------------------------------------------------- |
 | GET    | `/settings`   | Fetch the caller's synced `VSSettings` (404 if none)   |
 | PUT    | `/settings`   | Upsert settings; last-write-wins via `updatedAt`       |
+| GET    | `/sessions`   | Fetch the caller's full `SessionRecord[]` history      |
 | POST   | `/sessions`   | Append one `SessionRecord`; recomputes `Stats`         |
 | GET    | `/stats`      | Fetch the caller's `LifetimeStats` (zeroed if none)    |
 | GET    | `/profile`    | Fetch the caller's handle + leaderboard opt-in         |
@@ -100,7 +101,10 @@ curl -i https://<api-id>.execute-api.<region>.amazonaws.com/stats \
   (`app/(tabs)/account.tsx`), `syncSettingsNow()` pulls the server copy and
   applies it if newer (by `updatedAt`), otherwise pushes the local copy up.
 - **Sessions** — `useSchedule.completeCurrent()` pushes each finished session
-  (fire-and-forget) so the server's `Stats` stay current.
+  (fire-and-forget) so the server's `Stats` stay current. On app launch/focus,
+  `syncSessionHistoryNow()` pulls the server history and merges by
+  `completedAt`, then rewrites local history/progress so dashboards and streaks
+  reflect the latest state across devices.
 - **Leaderboard** — `app/(tabs)/leaderboard.tsx` (via
   `useLeaderboard()`) pulls the caller's profile and the top-50 entries on
   focus, and pushes handle/opt-in edits through `pushProfile()`. Unlike
@@ -113,9 +117,5 @@ curl -i https://<api-id>.execute-api.<region>.amazonaws.com/stats \
 
 ## Not done yet
 
-- **Stats/history aren't pulled** — `stats.tsx` still computes `LifetimeStats`
-  from local history only. Session history itself isn't merged across
-  devices (each device's local history is its own baseline); only settings
-  sync bidirectionally today.
 - **Reports & UserAchievements sync** — deferred; still on-device only.
 - **Situational reminders & group mode** (rest of Phase 3, §10) — not started.

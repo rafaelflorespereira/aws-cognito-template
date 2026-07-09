@@ -12,6 +12,7 @@ import { computeStats } from "@vs/shared";
 import { currentSpacingMin } from "@/features/vs/schedule";
 import { ACHIEVEMENTS, evaluateAchievements } from "@/features/vs/achievements";
 import { useI18n } from "@/features/i18n";
+import { syncSessionHistoryNow } from "@/features/vs/sync";
 import ProgressRing from "@/components/ProgressRing";
 import StatCard from "@/components/StatCard";
 import AchievementBadge from "@/components/AchievementBadge";
@@ -36,6 +37,7 @@ export default function Stats() {
   useFocusEffect(
     useCallback(() => {
       (async () => {
+        await syncSessionHistoryNow();
         const [history, settings, progress] = await Promise.all([
           loadHistory(),
           loadSettings(),

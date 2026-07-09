@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { LeaderboardEntry, UserProfile } from "@vs/shared";
-import { fetchLeaderboard, isSyncConfigured, pullProfile, pushProfile } from "./sync";
+import {
+  fetchLeaderboardResult,
+  isSyncConfigured,
+  pullProfileResult,
+  pushProfileResult,
+  type SyncError,
+} from "./sync";
 import { getStoredTokens, parseIdToken } from "@vs/auth";
 
 const DEFAULT_PROFILE: UserProfile = { handle: "", leaderboardOptIn: false };
@@ -19,7 +25,9 @@ function suggestHandle(googleName: string): string {
 
 async function fetchProfile(): Promise<UserProfile> {
   const tokens = await getStoredTokens();
-  const profile = (await pullProfile()) ?? DEFAULT_PROFILE;
+  const profileResult = await pullProfileResult();
+  if (profileResult.error) throw profileResult.error;
+  const profile = profileResult.data ?? DEFAULT_PROFILE;
   if (!profile.handle && tokens) {
     const googleName = parseIdToken(tokens.idToken).name;
     const suggested = googleName ? suggestHandle(googleName) : "";
@@ -33,12 +41,30 @@ export interface UseLeaderboard {
   signedIn: boolean;
   profile: UserProfile;
   entries: LeaderboardEntry[];
-  error: string | null;
+  error: SyncError | null;
   refresh: () => Promise<void>;
-  // Returns false (and leaves `error` set) if the save was rejected, e.g. an
-  // invalid handle — lets the screen keep the user's input instead of
-  // silently reverting it.
-  saveProfile: (partial: Partial<UserProfile>) => Promise<boolean>;
+  // Returns a structured error when the save is rejected (e.g. validation or
+  // auth failure), so the screen can render a specific message.
+  saveProfile: (partial: Partial<UserProfile>) => Promise<SyncError | null>;
+}
+
+function getSyncError(err: unknown): SyncError {
+  if (
+    typeof err === "object" &&
+    err !== null &&
+    "code" in err &&
+    "method" in err &&
+    "path" in err &&
+    "message" in err
+  ) {
+    return err as SyncError;
+  }
+  return {
+    code: "invalid_response",
+    method: "GET",
+    path: "/leaderboard",
+    message: "Unknown sync error",
+  };
 }
 
 export function useLeaderboard(): UseLeaderboard {
@@ -64,7 +90,11 @@ export function useLeaderboard(): UseLeaderboard {
 
   const leaderboardQuery = useQuery({
     queryKey: ["leaderboard"],
-    queryFn: async () => (await fetchLeaderboard()) ?? [],
+    queryFn: async () => {
+      const result = await fetchLeaderboardResult();
+      if (result.error) throw result.error;
+      return result.data ?? [];
+    },
     enabled: signedIn,
   });
 
@@ -72,9 +102,17 @@ export function useLeaderboard(): UseLeaderboard {
     mutationKey: ["profile", "save"],
     mutationFn: async (partial: Partial<UserProfile>) => {
       const current = profileQuery.data ?? DEFAULT_PROFILE;
-      const saved = await pushProfile({ ...current, ...partial });
-      if (!saved) throw new Error("Failed to save leaderboard profile");
-      return saved;
+      const result = await pushProfileResult({ ...current, ...partial });
+      if (result.error) throw result.error;
+      if (!result.data) {
+        throw {
+          code: "invalid_response",
+          method: "PUT",
+          path: "/profile",
+          message: "Profile response is missing",
+        } as SyncError;
+      }
+      return result.data;
     },
     onSuccess: (saved) => {
       queryClient.setQueryData(["profile"], saved);
@@ -94,9 +132,9 @@ export function useLeaderboard(): UseLeaderboard {
     async (partial: Partial<UserProfile>) => {
       try {
         await mutation.mutateAsync(partial);
-        return true;
-      } catch {
-        return false;
+        return null;
+      } catch (err) {
+        return getSyncError(err);
       }
     },
     [mutation],
@@ -105,13 +143,20 @@ export function useLeaderboard(): UseLeaderboard {
   const loading =
     checkingSession ||
     (signedIn && (profileQuery.isLoading || leaderboardQuery.isLoading));
+  const error = mutation.error
+    ? getSyncError(mutation.error)
+    : profileQuery.error
+      ? getSyncError(profileQuery.error)
+      : leaderboardQuery.error
+        ? getSyncError(leaderboardQuery.error)
+        : null;
 
   return {
     loading,
     signedIn,
     profile: signedIn ? profileQuery.data ?? DEFAULT_PROFILE : DEFAULT_PROFILE,
     entries: signedIn ? leaderboardQuery.data ?? [] : [],
-    error: mutation.isError ? "save-failed" : null,
+    error,
     refresh,
     saveProfile,
   };
