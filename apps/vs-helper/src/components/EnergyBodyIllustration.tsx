@@ -1,74 +1,64 @@
-import { useEffect, useRef, useState } from "react";
-import { Animated, View, StyleSheet } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, StyleSheet, View } from "react-native";
 import Svg, {
-  Defs,
-  LinearGradient,
-  RadialGradient,
-  Stop,
-  ClipPath,
-  Rect,
   Circle,
+  ClipPath,
+  Defs,
   Ellipse,
   G,
+  LinearGradient,
+  RadialGradient,
+  Rect,
+  Stop,
 } from "react-native-svg";
 
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
 
 const WIDTH = 200;
 const HEIGHT = 420;
-
-// Body silhouette built from simple overlapping rounded shapes (head, torso,
-// arms, legs, feet), all the same fill so the seams disappear and it reads as
-// one figure. Coordinates are hand-placed, not derived from anything.
+const BODY_CENTER_X = WIDTH / 2;
+const ORB_TOP_Y = 64;
+const ORB_BOTTOM_Y = 356;
 const BODY_SHAPES = (
   <>
-    <Circle cx={100} cy={54} r={28} />
-    <Rect x={66} y={78} width={68} height={130} rx={30} />
-    <Rect x={40} y={86} width={30} height={118} rx={13} />
-    <Rect x={130} y={86} width={30} height={118} rx={13} />
-    <Rect x={68} y={198} width={30} height={170} rx={14} />
-    <Rect x={102} y={198} width={30} height={170} rx={14} />
-    <Rect x={62} y={364} width={40} height={16} rx={8} />
-    <Rect x={98} y={364} width={40} height={16} rx={8} />
+    <Circle cx={BODY_CENTER_X} cy={64} r={34} />
+    <Rect x={52} y={112} width={96} height={276} rx={48} />
   </>
 );
 
-// The 9 chakra points the VS maneuvers move through, top to bottom, matching
-// CHAKRA_IDS order. Used to light up markers as the energy point reaches them.
 const CHAKRA_POINTS: { id: string; cx: number; cy: number }[] = [
-  { id: "coronochakra", cx: 100, cy: 28 },
-  { id: "frontochakra", cx: 100, cy: 48 },
-  { id: "laryngochakra", cx: 100, cy: 84 },
-  { id: "cardiochakra", cx: 100, cy: 122 },
-  { id: "umbilicochakra", cx: 100, cy: 165 },
-  { id: "sexochakra", cx: 100, cy: 200 },
-  { id: "basochakra", cx: 100, cy: 216 },
-  { id: "palmar", cx: 55, cy: 195 },
-  { id: "palmar", cx: 145, cy: 195 },
-  { id: "plantar", cx: 82, cy: 380 },
-  { id: "plantar", cx: 118, cy: 380 },
+  { id: "crown", cx: 100, cy: 72 },
+  { id: "throat", cx: 100, cy: 124 },
+  { id: "heart", cx: 100, cy: 176 },
+  { id: "solar", cx: 100, cy: 226 },
+  { id: "sacral", cx: 100, cy: 278 },
+  { id: "root", cx: 100, cy: 334 },
+  { id: "ground", cx: 100, cy: 348 },
 ];
 
-// Narrative phases, keyed off the overall session `progress` (0..1):
-//   0 – 15%: a single slow pass, head to feet (the energy "settling in").
-//  15% – 100%: the point sways bottom-to-top-to-bottom, accelerating into a
-//   fast, blurred "dynamo" vibration.
-// The last stretch of the vibration phase fades in an aura around the body,
-// standing in for the vibrational state having been reached.
 const DESCENT_END = 0.08;
-const AURA_START = 0.94; // fraction *within* the vibration phase, not overall progress
+const AURA_START = 0.94;
 const FREQ_START_HZ = 0.12;
 const FREQ_END_HZ = 4.0;
-// Eases the frequency ramp so it lingers slow for longer and only
-// accelerates sharply near the end, instead of climbing at a constant rate.
 const FREQ_RAMP_POWER = 2.4;
 
 interface Props {
-  /** 0..1, how far the practice session has progressed. */
   progress: number;
   height?: number;
+}
+
+function flareInputRange(cy: number) {
+  const rawCenter = (cy - ORB_TOP_Y) / (ORB_BOTTOM_Y - ORB_TOP_Y);
+  const center = Math.max(0.001, Math.min(0.999, rawCenter));
+  const spread = 0.13;
+  return [
+    Math.max(0, center - spread),
+    Math.max(0.001, center - spread / 2),
+    center,
+    Math.min(0.999, center + spread / 2),
+    Math.min(1, center + spread),
+  ];
 }
 
 export default function EnergyBodyIllustration({
@@ -76,19 +66,9 @@ export default function EnergyBodyIllustration({
   height = 260,
 }: Props) {
   const clamped = Math.max(0, Math.min(1, progress));
-
-  // Position of the traveling energy point along the body: 0 = head, 1 = feet.
   const posValue = useRef(new Animated.Value(0)).current;
-  // Fill height only ever grows: once the first descent completes, the body
-  // stays fully lit while the point above keeps vibrating on top of it.
-  const fillPosValue = useRef(new Animated.Value(0)).current;
   const auraOpacity = useRef(new Animated.Value(0)).current;
 
-  const [maxPos, setMaxPos] = useState(0);
-  const maxPosRef = useRef(0);
-  const fillLatchedRef = useRef(false);
-
-  // Read by the persistent rAF loop below; written whenever `progress` ticks.
   const inVibrationRef = useRef(false);
   const instFreqRef = useRef(FREQ_START_HZ);
   const phaseRef = useRef(0);
@@ -96,34 +76,20 @@ export default function EnergyBodyIllustration({
   useEffect(() => {
     if (clamped < DESCENT_END) {
       inVibrationRef.current = false;
-      const pos = clamped / DESCENT_END;
       Animated.timing(posValue, {
-        toValue: pos,
+        toValue: clamped / DESCENT_END,
         duration: 900,
         useNativeDriver: false,
       }).start();
-      Animated.timing(fillPosValue, {
-        toValue: pos,
-        duration: 900,
+      Animated.timing(auraOpacity, {
+        toValue: 0,
+        duration: 400,
         useNativeDriver: false,
       }).start();
-      maxPosRef.current = Math.max(maxPosRef.current, pos);
-      setMaxPos(maxPosRef.current);
       return;
     }
 
     inVibrationRef.current = true;
-    maxPosRef.current = 1;
-    setMaxPos(1);
-    if (!fillLatchedRef.current) {
-      fillLatchedRef.current = true;
-      Animated.timing(fillPosValue, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    }
-
     const t2 = (clamped - DESCENT_END) / (1 - DESCENT_END);
     const eased = Math.pow(Math.min(1, t2), FREQ_RAMP_POWER);
     instFreqRef.current = FREQ_START_HZ + (FREQ_END_HZ - FREQ_START_HZ) * eased;
@@ -135,12 +101,8 @@ export default function EnergyBodyIllustration({
       duration: 600,
       useNativeDriver: false,
     }).start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clamped]);
+  }, [auraOpacity, clamped, posValue]);
 
-  // Persistent animation-frame loop: drives the oscillation continuously so
-  // the vibration stays smooth regardless of how often `progress` itself
-  // ticks (the practice screen updates it once per second).
   useEffect(() => {
     let raf: number;
     let lastTs: number | null = null;
@@ -151,33 +113,31 @@ export default function EnergyBodyIllustration({
         const dt = (ts - lastTs) / 1000;
         lastTs = ts;
         phaseRef.current += 2 * Math.PI * instFreqRef.current * dt;
-        const pos = 0.5 + 0.5 * Math.cos(phaseRef.current);
-        posValue.setValue(pos);
+        posValue.setValue(0.5 + 0.5 * Math.cos(phaseRef.current));
       } else {
         lastTs = null;
       }
       raf = requestAnimationFrame(tick);
     }
+
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [posValue]);
 
-  const fillHeight = fillPosValue.interpolate({
+  const orbY = posValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, HEIGHT],
+    outputRange: [ORB_TOP_Y, ORB_BOTTOM_Y],
   });
-  const glowY = posValue.interpolate({
+  // Glossy highlight offset: sits just above the orb centre so the single orb
+  // reads as a lit, reflective sphere rather than a flat disc.
+  const highlightY = posValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, HEIGHT],
+    outputRange: [ORB_TOP_Y - 16, ORB_BOTTOM_Y - 16],
   });
-  // Pulses each time the point passes through a turning point, which during
-  // the vibration phase reads as the glow brightening with each sway.
-  const glowOpacity = posValue.interpolate({
+  const pulseOpacity = posValue.interpolate({
     inputRange: [0, 0.05, 0.5, 0.95, 1],
-    outputRange: [0, 1, 1, 1, 0],
+    outputRange: [0.75, 0.95, 0.9, 0.95, 0.75],
   });
-
-  const boundaryY = maxPos * HEIGHT;
 
   return (
     <View style={[styles.wrap, { height }]}>
@@ -188,67 +148,111 @@ export default function EnergyBodyIllustration({
         preserveAspectRatio="xMidYMid meet"
       >
         <Defs>
-          <LinearGradient id="energyGradient" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0%" stopColor="#a5b4fc" />
-            <Stop offset="60%" stopColor="#6366f1" />
-            <Stop offset="100%" stopColor="#4338ca" />
-          </LinearGradient>
-          <RadialGradient id="auraGradient" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor="#c7d2fe" stopOpacity={0.55} />
-            <Stop offset="55%" stopColor="#818cf8" stopOpacity={0.25} />
-            <Stop offset="100%" stopColor="#818cf8" stopOpacity={0} />
+          <RadialGradient id="bodyVignette" cx="50%" cy="42%" r="68%">
+            <Stop offset="0%" stopColor="#e0e7ff" stopOpacity={0.12} />
+            <Stop offset="58%" stopColor="#c7d2fe" stopOpacity={0.055} />
+            <Stop offset="100%" stopColor="#818cf8" stopOpacity={0.025} />
           </RadialGradient>
+          <RadialGradient id="orbGradient" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#e0e7ff" stopOpacity={0.92} />
+            <Stop offset="34%" stopColor="#c7d2fe" stopOpacity={0.72} />
+            <Stop offset="68%" stopColor="#818cf8" stopOpacity={0.24} />
+            <Stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id="haloGradient" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#c7d2fe" stopOpacity={0.28} />
+            <Stop offset="58%" stopColor="#818cf8" stopOpacity={0.12} />
+            <Stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+          </RadialGradient>
+          <RadialGradient id="auraGradient" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#c7d2fe" stopOpacity={0.16} />
+            <Stop offset="60%" stopColor="#818cf8" stopOpacity={0.075} />
+            <Stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+          </RadialGradient>
+          <LinearGradient id="silhouetteSheen" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%" stopColor="#e0e7ff" stopOpacity={0.09} />
+            <Stop offset="100%" stopColor="#818cf8" stopOpacity={0.045} />
+          </LinearGradient>
           <ClipPath id="bodyClip">{BODY_SHAPES}</ClipPath>
         </Defs>
 
-        {/* Aura: fades in once the vibration has ramped up to a dynamo. */}
         <AnimatedEllipse
-          cx={WIDTH / 2}
+          cx={BODY_CENTER_X}
           cy={HEIGHT / 2}
-          rx={130}
-          ry={230}
+          rx={118}
+          ry={222}
           fill="url(#auraGradient)"
           opacity={auraOpacity}
         />
 
-        {/* Dim resting silhouette, always visible. */}
-        <G fill="#c7d2fe" opacity={0.14}>
+        <G fill="#c7d2fe" opacity={0.075}>
+          {BODY_SHAPES}
+        </G>
+        <G fill="url(#bodyVignette)" opacity={0.7}>
+          {BODY_SHAPES}
+        </G>
+        <G fill="url(#silhouetteSheen)" opacity={0.55}>
           {BODY_SHAPES}
         </G>
 
-        {/* Bright energy fill, clipped to the body. Grows head-to-feet during
-            the descent, then stays full through the vibration phase. */}
-        <AnimatedRect
-          x={0}
-          y={0}
-          width={WIDTH}
-          height={fillHeight}
-          fill="url(#energyGradient)"
-          clipPath="url(#bodyClip)"
+        <AnimatedEllipse
+          cx={BODY_CENTER_X}
+          cy={orbY}
+          rx={62}
+          ry={58}
+          fill="url(#haloGradient)"
+          opacity={pulseOpacity}
         />
 
-        {/* Traveling glow: a single pass down, then the vibrating point. */}
-        <AnimatedCircle
-          cx={WIDTH / 2}
-          cy={glowY}
-          r={16}
-          fill="#e0e7ff"
-          opacity={glowOpacity}
-          clipPath="url(#bodyClip)"
-        />
+        <G clipPath="url(#bodyClip)">
+          <AnimatedEllipse
+            cx={BODY_CENTER_X}
+            cy={orbY}
+            rx={54}
+            ry={52}
+            fill="url(#orbGradient)"
+            opacity={pulseOpacity}
+          />
+          <AnimatedEllipse
+            cx={BODY_CENTER_X}
+            cy={highlightY}
+            rx={20}
+            ry={16}
+            fill="#f5f7ff"
+            opacity={0.35}
+          />
+        </G>
 
-        {/* Chakra markers: lit once the energy has reached them, then stay lit. */}
-        {CHAKRA_POINTS.map((p, i) => {
-          const lit = p.cy <= boundaryY;
+        {CHAKRA_POINTS.map((point) => {
+          const inputRange = flareInputRange(point.cy);
+          const flareOpacity = posValue.interpolate({
+            inputRange,
+            outputRange: [0, 0.14, 0.86, 0.14, 0],
+            extrapolate: "clamp",
+          });
+          const flareRadius = posValue.interpolate({
+            inputRange,
+            outputRange: [4.5, 6, 9.5, 6, 4.5],
+            extrapolate: "clamp",
+          });
+
           return (
-            <Circle
-              key={`${p.id}-${i}`}
-              cx={p.cx}
-              cy={p.cy}
-              r={lit ? 5 : 4}
-              fill={lit ? "#e0e7ff" : "#475569"}
-              opacity={lit ? 0.95 : 0.5}
-            />
+            <G key={point.id}>
+              <Circle
+                cx={point.cx}
+                cy={point.cy}
+                r={4.2}
+                fill="#475569"
+                opacity={0.34}
+              />
+              <AnimatedCircle
+                cx={point.cx}
+                cy={point.cy}
+                r={flareRadius}
+                fill="#e0e7ff"
+                opacity={flareOpacity}
+              />
+            </G>
           );
         })}
       </Svg>

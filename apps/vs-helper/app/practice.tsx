@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
@@ -12,21 +11,71 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSchedule } from "@/features/vs/useSchedule";
 import { MANEUVERS } from "@/features/vs/content";
 import { useI18n, type TranslationKey } from "@/features/i18n";
-import PracticeStep from "@/components/PracticeStep";
 import PracticeBackground from "@/components/PracticeBackground";
-import ProgressRing from "@/components/ProgressRing";
 import EnergyBodyIllustration from "@/components/EnergyBodyIllustration";
+
+const ILLUSTRATION_HEIGHT = 400;
+const SERIF = "PlayfairDisplay_600SemiBold";
+const PHRASE_MAX = 46; // target max characters per on-screen phrase
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60);
-  const s = sec % 60;
+  const s = Math.floor(sec % 60);
   return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+// Breaks a maneuver's instruction into short, glanceable phrases so only a
+// little text shows at a time. Splits on sentences first, then on commas when a
+// sentence is too long, then hard-wraps by words as a last resort.
+function splitPhrases(text: string): string[] {
+  const sentences = text
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.replace(/[.!?]+$/, "").trim())
+    .filter(Boolean);
+
+  const out: string[] = [];
+  for (const sentence of sentences) {
+    if (sentence.length <= PHRASE_MAX) {
+      out.push(sentence);
+      continue;
+    }
+    let buf = "";
+    for (const part of sentence.split(/,\s*/)) {
+      const candidate = buf ? `${buf}, ${part}` : part;
+      if (candidate.length > PHRASE_MAX && buf) {
+        out.push(buf);
+        buf = part;
+      } else {
+        buf = candidate;
+      }
+    }
+    if (buf) out.push(buf);
+  }
+
+  // Hard-wrap any remaining over-long chunk by words.
+  return out.flatMap((chunk) => {
+    if (chunk.length <= PHRASE_MAX * 1.4) return [chunk];
+    const words = chunk.split(/\s+/);
+    const wrapped: string[] = [];
+    let line = "";
+    for (const w of words) {
+      const candidate = line ? `${line} ${w}` : w;
+      if (candidate.length > PHRASE_MAX && line) {
+        wrapped.push(line);
+        line = w;
+      } else {
+        line = candidate;
+      }
+    }
+    if (line) wrapped.push(line);
+    return wrapped;
+  });
 }
 
 export default function Practice() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { settings, completeCurrent } = useSchedule();
 
   const [remaining, setRemaining] = useState(settings.sessionDurationSec);
@@ -57,187 +106,152 @@ export default function Practice() {
     if (finishing) return;
     setFinishing(true);
     setRunning(false);
-    const slot = await completeCurrent();
-    router.replace({ pathname: "/report", params: { slot } });
+    try {
+      const slot = await completeCurrent();
+      router.replace({ pathname: "/report", params: { slot } });
+    } catch {
+      // Let the user retry rather than leaving the screen wedged.
+      setFinishing(false);
+    }
   }
 
+  const totalSec = Math.max(1, settings.sessionDurationSec);
+  const elapsed = totalSec - remaining;
+  const elapsedRatio = elapsed / totalSec;
+
+  const stepCount = MANEUVERS.length;
   const activeStep = Math.min(
-    MANEUVERS.length,
-    Math.max(
-      1,
-      Math.ceil(
-        ((settings.sessionDurationSec - remaining) /
-          Math.max(1, settings.sessionDurationSec)) *
-          MANEUVERS.length,
-      ),
-    ),
+    stepCount,
+    Math.max(1, Math.ceil(elapsedRatio * stepCount)),
   );
   const current = MANEUVERS[activeStep - 1];
 
-  // Crossfade the step card in whenever the active maneuver changes.
+  const stepDuration = totalSec / stepCount;
+  const timeInStep = Math.max(
+    0,
+    Math.min(stepDuration, elapsed - (activeStep - 1) * stepDuration),
+  );
+  const stepFill = stepDuration > 0 ? timeInStep / stepDuration : 0;
+
+  // Short phrases for the current maneuver, revealed one at a time across the
+  // step so the screen never shows more than a line or two.
+  const phrases = useMemo(
+    () => splitPhrases(t(`maneuver.${current.n}.text` as TranslationKey)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current.n, lang],
+  );
+  const phraseCount = Math.max(1, phrases.length);
+  const phraseIndex = Math.min(
+    phraseCount - 1,
+    Math.floor(stepFill * phraseCount),
+  );
+  const phrase = phrases[phraseIndex] ?? "";
+
+  // Crossfade the phrase whenever it changes (new phrase or new step).
   const fade = useRef(new Animated.Value(1)).current;
-  const prevStep = useRef(activeStep);
+  const fadeKey = `${activeStep}:${phraseIndex}`;
+  const prevKey = useRef(fadeKey);
   useEffect(() => {
-    if (prevStep.current === activeStep) return;
-    prevStep.current = activeStep;
+    if (prevKey.current === fadeKey) return;
+    prevKey.current = fadeKey;
     fade.setValue(0);
     Animated.timing(fade, {
       toValue: 1,
       duration: 350,
       useNativeDriver: true,
     }).start();
-  }, [activeStep, fade]);
+  }, [fadeKey, fade]);
 
-  const totalSec = Math.max(1, settings.sessionDurationSec);
-  const elapsedRatio = (totalSec - remaining) / totalSec;
-
-  // Focus transition: once running, the countdown shrinks into a small badge
-  // pinned to the top of the screen and the illustration grows to take over
-  // as the main focus.
-  const focusAnim = useRef(new Animated.Value(0)).current;
-  const [illustrationHeight, setIllustrationHeight] = useState(240);
-  useEffect(() => {
-    const id = focusAnim.addListener(({ value }) => {
-      setIllustrationHeight(240 + value * 120);
-    });
-    return () => focusAnim.removeListener(id);
-  }, [focusAnim]);
-  useEffect(() => {
-    Animated.timing(focusAnim, {
-      toValue: running ? 1 : 0,
-      duration: 450,
-      useNativeDriver: false,
-    }).start();
-  }, [running, focusAnim]);
+  const guided = settings.showGuidedSteps;
 
   return (
     <View style={styles.screen}>
       <PracticeBackground />
 
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.miniRing,
-          {
-            top: insets.top + 12,
-            opacity: focusAnim,
-            transform: [
-              {
-                scale: focusAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.5, 1],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <ProgressRing
-          size={88}
-          progress={elapsedRatio}
-          label={fmt(remaining)}
-          labelFontSize={20}
-          trackColor="rgba(255,255,255,0.15)"
-          labelColor="#fff"
-        />
-      </Animated.View>
+      <Text style={[styles.topTimer, { top: insets.top + 12 }]}>
+        {fmt(remaining)}
+      </Text>
 
-      <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          { paddingTop: insets.top + 48 },
-        ]}
-      >
-        <Animated.View
-          style={[
-            styles.energyArea,
-            {
-              flex: focusAnim,
-              // Clears the mini countdown badge (top: insets.top+12, size
-              // 88) which sits above the scroll content (padded
-              // insets.top+48), so the centered illustration ends up with
-              // equal space above and below it. Driven by the same
-              // `focusAnim` as the ring collapse/illustration grow below so
-              // the layout settles in one continuous motion instead of
-              // snapping and re-animating.
-              paddingTop: focusAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, 12 + 88 - 48],
-              }),
-            },
-          ]}
-        >
+      <View style={styles.center}>
+        <View style={styles.illustrationWrap} pointerEvents="none">
           <EnergyBodyIllustration
             progress={elapsedRatio}
-            height={illustrationHeight}
+            height={ILLUSTRATION_HEIGHT}
           />
-          <Text style={styles.energyCaption}>{t("practice.energyFlow")}</Text>
-        </Animated.View>
+        </View>
 
-        <Animated.View
-          pointerEvents={running ? "none" : "auto"}
-          style={{
-            height: focusAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [240, 0],
-            }),
-            opacity: focusAnim.interpolate({
-              inputRange: [0, 0.6, 1],
-              outputRange: [1, 0, 0],
-            }),
-            overflow: "hidden",
-          }}
-        >
-          <ProgressRing
-            size={240}
-            progress={elapsedRatio}
-            label={fmt(remaining)}
-            labelFontSize={52}
-            trackColor="rgba(255,255,255,0.15)"
-            labelColor="#fff"
-          />
-        </Animated.View>
+        {guided ? (
+          <Animated.View style={[styles.textOverlay, { opacity: fade }]}>
+            <Text style={styles.eyebrow}>
+              {t(`maneuver.${current.n}.title` as TranslationKey)}
+            </Text>
+            <Text style={styles.headline}>{phrase}</Text>
+            {phraseCount > 1 ? (
+              <Text style={styles.phraseCounter}>
+                {phraseIndex + 1} / {phraseCount}
+              </Text>
+            ) : null}
+          </Animated.View>
+        ) : null}
+      </View>
 
-        {!running ? (
-          <TouchableOpacity
-            style={styles.startBtn}
-            onPress={() => setRunning(true)}
-          >
-            <Text style={styles.startText}>{t("practice.start")}</Text>
-          </TouchableOpacity>
+      <View style={[styles.bottom, { paddingBottom: insets.bottom + 16 }]}>
+        {running ? (
+          <>
+            {guided ? (
+              <>
+                <View style={styles.segments}>
+                  {MANEUVERS.map((m) => {
+                    const isPast = m.n < activeStep;
+                    const isCurrent = m.n === activeStep;
+                    const fillPct = isPast ? 1 : isCurrent ? stepFill : 0;
+                    return (
+                      <View key={m.n} style={styles.segmentTrack}>
+                        <View
+                          style={[
+                            styles.segmentFill,
+                            isCurrent && styles.segmentFillCurrent,
+                            { width: `${Math.round(fillPct * 100)}%` },
+                          ]}
+                        />
+                      </View>
+                    );
+                  })}
+                </View>
+
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaText}>
+                    {t("practice.stepLabel", {
+                      n: activeStep,
+                      total: stepCount,
+                    })}
+                  </Text>
+                  <Text style={styles.metaText}>
+                    {t("practice.inStep", { time: fmt(timeInStep) })}
+                  </Text>
+                </View>
+              </>
+            ) : null}
+
+            <TouchableOpacity onPress={finish} hitSlop={12}>
+              <Text style={styles.finish}>{t("practice.finishShort")}</Text>
+            </TouchableOpacity>
+          </>
         ) : (
-          <TouchableOpacity style={styles.finishBtn} onPress={finish}>
-            <Text style={styles.finishText}>{t("practice.finish")}</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity
+              style={styles.startBtn}
+              onPress={() => setRunning(true)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.startText}>{t("practice.start")}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+              <Text style={styles.cancel}>{t("practice.cancel")}</Text>
+            </TouchableOpacity>
+          </>
         )}
-
-        {settings.showGuidedSteps && (
-          <View style={styles.stepArea}>
-            <View style={styles.dots}>
-              {MANEUVERS.map((m) => (
-                <View
-                  key={m.n}
-                  style={[styles.dot, m.n <= activeStep && styles.dotDone]}
-                />
-              ))}
-            </View>
-
-            <Animated.View style={[styles.stepCard, { opacity: fade }]}>
-              <PracticeStep
-                key={current.n}
-                n={current.n}
-                title={t(`maneuver.${current.n}.title` as TranslationKey)}
-                text={t(`maneuver.${current.n}.text` as TranslationKey)}
-                active
-              />
-            </Animated.View>
-          </View>
-        )}
-
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.cancel}>{t("practice.cancel")}</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -245,80 +259,106 @@ export default function Practice() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#141019",
   },
-  container: {
-    flexGrow: 1,
+  topTimer: {
+    position: "absolute",
+    right: 24,
+    color: "#8b88a3",
+    fontSize: 17,
+    fontWeight: "600",
+    fontVariant: ["tabular-nums"],
+    zIndex: 10,
+  },
+  center: {
+    flex: 1,
     alignItems: "center",
-    padding: 24,
+    justifyContent: "center",
+  },
+  illustrationWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textOverlay: {
+    paddingHorizontal: 36,
+    alignItems: "center",
+    gap: 14,
+    minHeight: 150,
+    justifyContent: "center",
+  },
+  eyebrow: {
+    color: "#9490ad",
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 3,
+    textTransform: "uppercase",
+  },
+  headline: {
+    color: "#f4f2f8",
+    fontFamily: SERIF,
+    fontSize: 30,
+    lineHeight: 40,
+    textAlign: "center",
+    textShadowColor: "rgba(20,16,25,0.9)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 18,
+  },
+  phraseCounter: {
+    color: "#6f6c85",
+    fontSize: 13,
+    fontWeight: "600",
+    letterSpacing: 1,
+    fontVariant: ["tabular-nums"],
+  },
+  bottom: {
+    paddingHorizontal: 24,
     gap: 16,
-    paddingTop: 72,
+    alignItems: "center",
+  },
+  segments: {
+    flexDirection: "row",
+    gap: 6,
+    width: "100%",
+  },
+  segmentTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#2b2836",
+    overflow: "hidden",
+  },
+  segmentFill: {
+    height: "100%",
+    borderRadius: 2,
+    backgroundColor: "#6d5ef2",
+  },
+  segmentFillCurrent: {
+    backgroundColor: "#b3a7f7",
+  },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  metaText: {
+    color: "#6f6c85",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  finish: {
+    color: "#b6b3c9",
+    fontSize: 16,
+    fontWeight: "600",
+    paddingVertical: 8,
   },
   startBtn: {
-    backgroundColor: "#6366f1",
+    backgroundColor: "#6d5ef2",
     borderRadius: 999,
     paddingVertical: 16,
     paddingHorizontal: 48,
   },
   startText: { color: "#fff", fontSize: 18, fontWeight: "700" },
-  finishBtn: {
-    borderColor: "#94a3b8",
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-  },
-  finishText: { color: "#e2e8f0", fontSize: 15, fontWeight: "600" },
-  miniRing: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    zIndex: 20,
-  },
-  energyArea: {
-    width: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  energyCaption: {
-    color: "#94a3b8",
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  stepArea: {
-    width: "100%",
-    maxWidth: 420,
-    alignItems: "center",
-    marginTop: 8,
-    gap: 12,
-  },
-  dots: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#334155",
-  },
-  dotDone: {
-    backgroundColor: "#6366f1",
-  },
-  stepCard: {
-    width: "100%",
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(165,180,252,0.35)",
-    padding: 8,
-    shadowColor: "#818cf8",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 6,
-  },
-  cancel: { color: "#94a3b8", fontSize: 15, marginTop: 8 },
+  cancel: { color: "#8b88a3", fontSize: 15 },
 });
