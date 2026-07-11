@@ -26,12 +26,12 @@ export const translations = {
     "tab.account": "Account",
 
     "home.title": "Vibrational State",
-    "home.cta": "Do the Vibrational State now",
+    "home.cta": "Start practice",
+    "home.week": "This week",
+    "home.nextAt": "Next practice at {time}",
 
-    "next.caption": "Next practice",
     "next.allDone": "All done for today",
     "next.dueNow": "Due now",
-    "next.getReady": "Get ready",
     "next.spacing": "~{min} min between sessions",
 
     "practice.start": "Start",
@@ -164,12 +164,12 @@ export const translations = {
     "tab.account": "Conta",
 
     "home.title": "Estado Vibracional",
-    "home.cta": "Fazer o Estado Vibracional agora",
+    "home.cta": "Iniciar prática",
+    "home.week": "Esta semana",
+    "home.nextAt": "Próxima prática às {time}",
 
-    "next.caption": "Próxima prática",
     "next.allDone": "Tudo feito por hoje",
     "next.dueNow": "Agora",
-    "next.getReady": "Prepare-se",
     "next.spacing": "~{min} min entre sessões",
 
     "practice.start": "Começar",
@@ -302,12 +302,12 @@ export const translations = {
     "tab.account": "Cuenta",
 
     "home.title": "Estado Vibracional",
-    "home.cta": "Hacer el Estado Vibracional ahora",
+    "home.cta": "Iniciar práctica",
+    "home.week": "Esta semana",
+    "home.nextAt": "Próxima práctica a las {time}",
 
-    "next.caption": "Próxima práctica",
     "next.allDone": "Todo listo por hoy",
     "next.dueNow": "Ahora",
-    "next.getReady": "Prepárate",
     "next.spacing": "~{min} min entre sesiones",
 
     "practice.start": "Empezar",
@@ -440,12 +440,12 @@ export const translations = {
     "tab.account": "Compte",
 
     "home.title": "État Vibratoire",
-    "home.cta": "Faire l'État Vibratoire maintenant",
+    "home.cta": "Commencer la pratique",
+    "home.week": "Cette semaine",
+    "home.nextAt": "Prochaine pratique à {time}",
 
-    "next.caption": "Prochaine pratique",
     "next.allDone": "Tout est fait pour aujourd'hui",
     "next.dueNow": "Maintenant",
-    "next.getReady": "Préparez-vous",
     "next.spacing": "~{min} min entre les séances",
 
     "practice.start": "Commencer",
@@ -580,12 +580,12 @@ export const translations = {
     "tab.account": "Account",
 
     "home.title": "Stato Vibrazionale",
-    "home.cta": "Fai lo Stato Vibrazionale ora",
+    "home.cta": "Inizia la pratica",
+    "home.week": "Questa settimana",
+    "home.nextAt": "Prossima pratica alle {time}",
 
-    "next.caption": "Prossima pratica",
     "next.allDone": "Tutto fatto per oggi",
     "next.dueNow": "Adesso",
-    "next.getReady": "Preparati",
     "next.spacing": "~{min} min tra le sessioni",
 
     "practice.start": "Inizia",

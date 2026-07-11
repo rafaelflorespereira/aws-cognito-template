@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useSchedule } from "@/features/vs/useSchedule";
 import { loadHistory, todayStr } from "@/features/vs/storage";
 import { sessionCountsByDate } from "@/features/vs/schedule";
@@ -21,8 +22,7 @@ export default function Dashboard() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t, lang } = useI18n();
-  const { settings, nextDue, spacingMin, progress, refresh, loading } =
-    useSchedule();
+  const { settings, nextDue, progress, refresh, loading } = useSchedule();
   const [weekDays, setWeekDays] = useState<WeekDay[]>([]);
 
   // Refresh progress whenever the dashboard regains focus (e.g. after a session).
@@ -72,7 +72,6 @@ export default function Dashboard() {
         <Text style={styles.title}>{t("home.title")}</Text>
         <NextPracticeCard
           nextDue={nextDue}
-          spacingMin={spacingMin}
           completed={progress.completed}
           target={settings.timesPerDay}
         />
@@ -82,6 +81,7 @@ export default function Dashboard() {
           onPress={() => router.push("/practice")}
           activeOpacity={0.85}
         >
+          <Ionicons name="play" size={18} color="#fff" />
           <Text style={styles.primaryText}>{t("home.cta")}</Text>
         </TouchableOpacity>
       </View>
@@ -95,6 +95,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#f8fafc",
     padding: 24,
+    gap: 20,
   },
   centerArea: {
     flex: 1,
@@ -109,13 +110,21 @@ const styles = StyleSheet.create({
     color: "#0f172a",
   },
   primary: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
     backgroundColor: "#6366f1",
-    borderRadius: 14,
+    borderRadius: 999,
     paddingVertical: 16,
     paddingHorizontal: 24,
     width: "100%",
     maxWidth: 360,
-    alignItems: "center",
+    shadowColor: "#6366f1",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 4,
   },
   primaryText: { color: "#fff", fontSize: 17, fontWeight: "700" },
 });

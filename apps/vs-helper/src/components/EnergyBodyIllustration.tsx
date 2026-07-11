@@ -65,6 +65,19 @@ const FREQ_END_HZ = 4.0;
 // accelerates sharply near the end, instead of climbing at a constant rate.
 const FREQ_RAMP_POWER = 2.4;
 
+// The single head-to-feet pass plays once, in real time, independent of how
+// often `progress` itself ticks (the practice screen updates it once per
+// second) — see the effect below for why that decoupling matters.
+const DESCENT_DURATION_MS = 1600;
+
+// Ease-out curve built from the natural (Neperian) logarithm: quick initial
+// motion that settles smoothly toward the end, rather than a linear or
+// mechanically-stepped pass. ln(1) = 0 and ln(e) = 1, so t=0..1 maps cleanly
+// to eased 0..1.
+function easeOutNeperian(t: number): number {
+  return Math.log(1 + t * (Math.E - 1));
+}
+
 interface Props {
   /** 0..1, how far the practice session has progressed. */
   progress: number;
@@ -92,26 +105,48 @@ export default function EnergyBodyIllustration({
   const inVibrationRef = useRef(false);
   const instFreqRef = useRef(FREQ_START_HZ);
   const phaseRef = useRef(0);
+  // Guards the descent so it plays exactly once: `progress` ticks roughly
+  // once a second from the practice screen's countdown, and re-triggering a
+  // fresh Animated.timing on every one of those ticks (the old behavior) cut
+  // the pass into overlapping fragments instead of one fluid motion.
+  const descentStartedRef = useRef(false);
+
+  // Tracks how far down the body the animated point has actually traveled,
+  // for the chakra markers to light up progressively as it passes — driven
+  // off the live animated value rather than the coarse per-tick `progress`.
+  useEffect(() => {
+    const id = posValue.addListener(({ value }) => {
+      if (inVibrationRef.current) return;
+      maxPosRef.current = Math.max(maxPosRef.current, value);
+      setMaxPos(maxPosRef.current);
+    });
+    return () => posValue.removeListener(id);
+  }, [posValue]);
 
   useEffect(() => {
     if (clamped < DESCENT_END) {
       inVibrationRef.current = false;
-      const pos = clamped / DESCENT_END;
+      if (descentStartedRef.current) return;
+      descentStartedRef.current = true;
       Animated.timing(posValue, {
-        toValue: pos,
-        duration: 900,
+        toValue: 1,
+        duration: DESCENT_DURATION_MS,
+        easing: easeOutNeperian,
         useNativeDriver: false,
       }).start();
       Animated.timing(fillPosValue, {
-        toValue: pos,
-        duration: 900,
+        toValue: 1,
+        duration: DESCENT_DURATION_MS,
+        easing: easeOutNeperian,
         useNativeDriver: false,
       }).start();
-      maxPosRef.current = Math.max(maxPosRef.current, pos);
-      setMaxPos(maxPosRef.current);
       return;
     }
 
+    // Entering the vibration phase: stop any in-flight descent timing before
+    // the rAF loop below starts manually driving posValue via setValue, so
+    // the two never fight over the same Animated.Value.
+    posValue.stopAnimation();
     inVibrationRef.current = true;
     maxPosRef.current = 1;
     setMaxPos(1);

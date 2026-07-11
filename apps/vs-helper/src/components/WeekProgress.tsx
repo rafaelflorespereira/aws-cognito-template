@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { Ionicons } from "@expo/vector-icons";
+import { useI18n } from "@/features/i18n";
 
 export interface WeekDay {
   date: string; // "YYYY-MM-DD"
@@ -11,18 +12,23 @@ export interface WeekDay {
   isToday: boolean;
 }
 
-const RING_SIZE = 36;
-const RING_SIZE_TODAY = 44;
+const RING_SIZE = 38;
+const RING_SIZE_TODAY = 54;
 
-// A row of small rings, one per day of the trailing week, showing how much of
-// that day's target was completed. Today is enlarged; achieved days swap
-// their day number for a checkmark so a completed day reads at a glance.
+// A card surfacing the trailing week as a row of rings, one per day, showing
+// how much of that day's target was completed. Today is enlarged and sits on
+// a tinted chip so the current day reads at a glance; achieved days swap
+// their day number for a checkmark.
 export default function WeekProgress({ days }: { days: WeekDay[] }) {
+  const { t } = useI18n();
   return (
-    <View style={styles.row}>
-      {days.map((day) => (
-        <DayRing key={day.date} day={day} />
-      ))}
+    <View style={styles.card}>
+      <Text style={styles.heading}>{t("home.week")}</Text>
+      <View style={styles.row}>
+        {days.map((day) => (
+          <DayRing key={day.date} day={day} />
+        ))}
+      </View>
     </View>
   );
 }
@@ -40,7 +46,7 @@ function DayRing({ day }: { day: WeekDay }) {
   const color = achieved ? "#22c55e" : "#6366f1";
 
   return (
-    <View style={styles.dayCol}>
+    <View style={[styles.dayCol, day.isToday && styles.dayColToday]}>
       <Text style={[styles.weekday, day.isToday && styles.weekdayToday]}>
         {day.weekday}
       </Text>
@@ -89,13 +95,33 @@ function DayRing({ day }: { day: WeekDay }) {
 }
 
 const styles = StyleSheet.create({
+  card: {
+    width: "100%",
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    gap: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  heading: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#64748b",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
   row: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
     width: "100%",
   },
-  dayCol: { alignItems: "center", gap: 6 },
+  dayCol: { alignItems: "center", gap: 6, borderRadius: 16, paddingVertical: 4 },
+  dayColToday: { backgroundColor: "#eef2ff", paddingHorizontal: 4 },
   center: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",

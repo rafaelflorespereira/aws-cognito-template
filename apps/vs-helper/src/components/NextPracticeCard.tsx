@@ -6,7 +6,6 @@ import ProgressRing from "@/components/ProgressRing";
 
 interface Props {
   nextDue: Date | null;
-  spacingMin: number;
   completed: number;
   target: number;
 }
@@ -27,9 +26,12 @@ function formatCountdown(ms: number): string {
   return `${mm}:${String(ss).padStart(2, "0")}`;
 }
 
+// The day's single focal point: one big ring for today's progress, with a
+// single status line underneath (next time, live countdown, or "all done").
+// Intentionally leaves out secondary detail (session spacing, captions) that
+// used to sit alongside it — that lives on the Progress tab instead.
 export default function NextPracticeCard({
   nextDue,
-  spacingMin,
   completed,
   target,
 }: Props) {
@@ -46,18 +48,20 @@ export default function NextPracticeCard({
   const msToNext = nextDue ? nextDue.getTime() - now.getTime() : null;
   const due = msToNext !== null && msToNext <= 0;
   const alarm = msToNext !== null && msToNext > 0 && msToNext <= ALARM_MS;
+  const urgent = alarm || due;
+  const allDone = !nextDue;
 
-  // Pulse the countdown while in the alarm window.
+  // Pulse the status line while in the alarm window.
   const pulse = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    if (!alarm && !due) {
+    if (!urgent) {
       pulse.setValue(1);
       return;
     }
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, {
-          toValue: 1.12,
+          toValue: 1.08,
           duration: 500,
           useNativeDriver: true,
         }),
@@ -70,60 +74,42 @@ export default function NextPracticeCard({
     );
     loop.start();
     return () => loop.stop();
-  }, [alarm, due, pulse]);
-
-  const urgent = alarm || due;
-
-  const countdownText =
-    due || msToNext === null ? t("next.dueNow") : formatCountdown(msToNext);
+  }, [urgent, pulse]);
 
   return (
     <View style={[styles.card, urgent && styles.cardAlarm]}>
-      <View style={styles.split}>
-        <View style={styles.progressCol}>
-          <ProgressRing
-            size={92}
-            progress={target ? completed / target : 0}
-            label={`${completed}/${target}`}
-            sublabel={t("stats.today")}
-          />
+      <ProgressRing
+        size={176}
+        progress={target ? completed / target : 0}
+        label={`${completed}/${target}`}
+        labelFontSize={42}
+        sublabel={t("stats.today")}
+      />
+
+      {allDone ? (
+        <View style={styles.statusRow}>
+          <Ionicons name="checkmark-circle" size={18} color="#22c55e" />
+          <Text style={styles.statusDone}>{t("next.allDone")}</Text>
         </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.nextCol}>
-          <Text style={styles.caption}>{t("next.caption")}</Text>
-          <Text style={[styles.time, urgent && styles.timeAlarm]}>
-            {nextDue ? formatClock(nextDue) : t("next.allDone")}
+      ) : (
+        <Animated.View
+          style={[
+            styles.statusRow,
+            urgent && { transform: [{ scale: pulse }] },
+          ]}
+        >
+          {urgent ? (
+            <Ionicons name="alarm" size={18} color="#dc2626" />
+          ) : null}
+          <Text style={[styles.statusText, urgent && styles.statusAlarm]}>
+            {due
+              ? t("next.dueNow")
+              : alarm
+                ? formatCountdown(msToNext!)
+                : t("home.nextAt", { time: formatClock(nextDue!) })}
           </Text>
-
-          {nextDue ? (
-            <Animated.View
-              style={[
-                styles.countdownRow,
-                urgent && { transform: [{ scale: pulse }] },
-              ]}
-            >
-              {urgent ? (
-                <Ionicons name="alarm" size={20} color="#dc2626" />
-              ) : null}
-              <Text style={[styles.countdown, urgent && styles.countdownAlarm]}>
-                {countdownText}
-              </Text>
-            </Animated.View>
-          ) : null}
-
-          {alarm ? (
-            <Text style={styles.getReady}>{t("next.getReady")}</Text>
-          ) : null}
-        </View>
-      </View>
-
-      {nextDue ? (
-        <Text style={styles.spacing}>
-          {t("next.spacing", { min: spacingMin })}
-        </Text>
-      ) : null}
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -131,10 +117,10 @@ export default function NextPracticeCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 28,
     alignItems: "center",
-    gap: 12,
+    gap: 14,
     width: "100%",
     maxWidth: 360,
     borderWidth: 2,
@@ -149,65 +135,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#fef2f2",
     borderColor: "#fca5a5",
   },
-  split: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-  },
-  progressCol: {
-    flex: 1,
-    alignItems: "center",
-  },
-  divider: {
-    width: 1,
-    alignSelf: "stretch",
-    backgroundColor: "#e2e8f0",
-    marginHorizontal: 16,
-  },
-  nextCol: {
-    flex: 1,
-    alignItems: "center",
-    gap: 4,
-  },
-  caption: {
-    fontSize: 13,
-    color: "#64748b",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  time: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: "#1e293b",
-  },
-  timeAlarm: {
-    color: "#b91c1c",
-  },
-  countdownRow: {
+  statusRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginVertical: 2,
   },
-  countdown: {
-    fontSize: 18,
+  statusText: {
+    fontSize: 16,
     fontWeight: "700",
-    color: "#6366f1",
+    color: "#475569",
     fontVariant: ["tabular-nums"],
   },
-  countdownAlarm: {
-    fontSize: 24,
+  statusAlarm: {
+    fontSize: 20,
     color: "#dc2626",
   },
-  getReady: {
-    fontSize: 13,
+  statusDone: {
+    fontSize: 16,
     fontWeight: "700",
-    color: "#dc2626",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  spacing: {
-    fontSize: 12,
-    color: "#94a3b8",
+    color: "#22c55e",
   },
 });
