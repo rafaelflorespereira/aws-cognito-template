@@ -66,6 +66,7 @@ export interface AdaptiveInput {
   lastTime: string;
   completed: number;
   lastCompletedAt: string | null;
+  completedSlots: string[];
 }
 
 /**
@@ -105,4 +106,45 @@ export function currentSpacingMin(input: AdaptiveInput, now: Date): number {
     ? Math.max(0, end.getTime() - anchor.getTime()) || totalWindowMs
     : totalWindowMs;
   return Math.max(1, Math.round(msLeft / remaining / 60000));
+}
+
+/**
+ * Every one of today's `timesPerDay` slot times, as "HH:mm". Sessions already
+ * completed keep the fixed evenly-spaced grid label they were logged
+ * against, but the not-yet-done ones are re-spread across the time left in
+ * the window, anchored on the last completion (same math as `nextDueDate`) —
+ * so logging a session now reflows the rest of the day instead of leaving it
+ * pinned to the original fixed grid.
+ */
+export function adaptiveSlots(
+  config: ScheduleConfig,
+  input: AdaptiveInput,
+  now: Date,
+): string[] {
+  const target = Math.max(1, Math.floor(config.timesPerDay));
+  const done = Math.min(Math.max(0, Math.floor(input.completed)), target);
+  // The recorded label for each completion is whatever `next` adaptively
+  // resolved to *at that moment* (see completeCurrent in useSchedule.ts), so
+  // it drifts from the fixed grid after the first reschedule. Use the actual
+  // recorded labels here — not the fixed grid — or the stepper below can't
+  // match a real completion back to "done".
+  const doneSlots = [...input.completedSlots].sort();
+
+  const remaining = target - done;
+  if (remaining <= 0) return doneSlots;
+
+  const start = atTimeToday(now, config.firstTime);
+  const end = atTimeToday(now, config.lastTime);
+  const anchor =
+    done === 0 || !input.lastCompletedAt
+      ? start
+      : new Date(input.lastCompletedAt);
+  const msLeft = end.getTime() - anchor.getTime();
+  if (msLeft <= 0) return doneSlots; // past the window; nothing more scheduled today
+
+  const upcoming = Array.from({ length: remaining }, (_, i) => {
+    const t = new Date(anchor.getTime() + (msLeft * (i + 1)) / remaining);
+    return toHHMM(t.getHours() * 60 + t.getMinutes());
+  });
+  return [...doneSlots, ...upcoming];
 }

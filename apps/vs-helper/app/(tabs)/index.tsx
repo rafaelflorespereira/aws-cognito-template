@@ -1,30 +1,40 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  PanResponder,
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { getStoredTokens, parseIdToken } from "@vs/auth";
 import { useSchedule } from "@/features/vs/useSchedule";
 import { loadHistory, todayStr } from "@/features/vs/storage";
 import { sessionCountsByDate } from "@/features/vs/schedule";
 import { computeStats } from "@vs/shared";
 import { useI18n, type TranslationKey } from "@/features/i18n";
 import WeekCard from "@/components/WeekCard";
-import Timeline, { type TimelineItem } from "@/components/Timeline";
+import NextPracticeCard from "@/components/NextPracticeCard";
 import { type WeekDay } from "@/components/WeekProgress";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const SWIPE_THRESHOLD = 40;
 
-// Maps the current hour to a time-of-day greeting key.
-function greetingKey(hour: number): TranslationKey {
-  if (hour >= 5 && hour < 12) return "home.greeting.morning";
-  if (hour >= 12 && hour < 18) return "home.greeting.afternoon";
-  if (hour >= 18 && hour < 22) return "home.greeting.evening";
-  return "home.greeting.night";
+type GreetingPeriod = "morning" | "afternoon" | "evening" | "night";
+
+// Maps the current hour to a time-of-day greeting period.
+function greetingPeriod(hour: number): GreetingPeriod {
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 18) return "afternoon";
+  if (hour >= 18 && hour < 22) return "evening";
+  return "night";
+}
+
+function firstNameOf(fullName: string | undefined): string | null {
+  const first = fullName?.trim().split(/\s+/)[0];
+  return first || null;
 }
 
 // Monday-aligned start of the calendar week containing `d`.
@@ -35,33 +45,12 @@ function startOfWeek(d: Date): Date {
   return monday;
 }
 
-// Builds a compact timeline around "now": the most recent completed slot, the
-// next-up slot, and the couple of slots that follow it.
-function buildTimeline(
-  slots: string[],
-  completedSlots: string[],
-  next: string | null,
-): TimelineItem[] {
-  const doneSet = new Set(completedSlots);
-  const done = slots.filter((s) => doneSet.has(s));
-  const items: TimelineItem[] = [];
-
-  if (next) {
-    const lastDone = done[done.length - 1];
-    if (lastDone) items.push({ time: lastDone, state: "done" });
-    items.push({ time: next, state: "next" });
-    const idx = slots.indexOf(next);
-    const upcoming = slots
-      .slice(idx + 1)
-      .filter((s) => !doneSet.has(s))
-      .slice(0, 2);
-    for (const s of upcoming) items.push({ time: s, state: "upcoming" });
-  } else {
-    // Nothing left today — show the last few completed sessions.
-    for (const s of done.slice(-3)) items.push({ time: s, state: "done" });
-  }
-
-  return items;
+// "Jun 1 – Jun 7" label for a non-current week, so a swiped-to week is still
+// identifiable without needing "N weeks ago" strings in every locale.
+function weekRangeLabel(monday: Date, lang: string): string {
+  const sunday = new Date(monday.getTime() + 6 * DAY_MS);
+  const fmt = new Intl.DateTimeFormat(lang, { month: "short", day: "numeric" });
+  return `${fmt.format(monday)} – ${fmt.format(sunday)}`;
 }
 
 export default function Dashboard() {
@@ -72,16 +61,38 @@ export default function Dashboard() {
     settings,
     slots,
     next,
+    nextDue,
+    spacingMin,
     progress,
     refresh,
     loading,
   } = useSchedule();
 
   const [now, setNow] = useState<Date>(new Date());
+  const [firstName, setFirstName] = useState<string | null>(null);
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, negative = earlier weeks
   const [weekDays, setWeekDays] = useState<WeekDay[]>([]);
   const [weekTotal, setWeekTotal] = useState(0);
+  const [weekLabel, setWeekLabel] = useState("");
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+
+  // Swipe left -> earlier week, swipe right -> back toward the current week.
+  // Only takes over from the screen's vertical ScrollView once the gesture is
+  // clearly horizontal, so normal scrolling isn't hijacked.
+  const weekPanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_evt, gesture) =>
+        Math.abs(gesture.dx) > 12 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 2,
+      onPanResponderRelease: (_evt, gesture) => {
+        if (gesture.dx <= -SWIPE_THRESHOLD) {
+          setWeekOffset((o) => o - 1);
+        } else if (gesture.dx >= SWIPE_THRESHOLD) {
+          setWeekOffset((o) => Math.min(0, o + 1));
+        }
+      },
+    }),
+  ).current;
 
   // Refresh progress whenever the dashboard regains focus (e.g. after a session).
   useFocusEffect(
@@ -91,13 +102,27 @@ export default function Dashboard() {
     }, [refresh]),
   );
 
+  // Re-check who's signed in on every focus, so the greeting picks up a fresh
+  // sign-in/sign-out from the Account tab without needing a full app reload.
+  useFocusEffect(
+    useCallback(() => {
+      getStoredTokens().then((tokens) => {
+        setFirstName(
+          tokens ? firstNameOf(parseIdToken(tokens.idToken).name) : null,
+        );
+      });
+    }, []),
+  );
+
   useFocusEffect(
     useCallback(() => {
       loadHistory().then((history) => {
         const counts = sessionCountsByDate(history);
         const current = new Date();
         const today = todayStr(current);
-        const monday = startOfWeek(current);
+        const monday = new Date(
+          startOfWeek(current).getTime() + weekOffset * 7 * DAY_MS,
+        );
         const fmt = new Intl.DateTimeFormat(lang, { weekday: "narrow" });
 
         let total = 0;
@@ -118,12 +143,17 @@ export default function Dashboard() {
         });
         setWeekDays(days);
         setWeekTotal(total);
+        setWeekLabel(
+          weekOffset === 0
+            ? t("week.thisWeek")
+            : weekRangeLabel(monday, lang),
+        );
 
         const stats = computeStats(history, settings.timesPerDay);
         setStreak(stats.currentStreak);
         setBestStreak(stats.bestStreak);
       });
-    }, [lang, progress.completed, settings.timesPerDay]),
+    }, [lang, progress.completed, settings.timesPerDay, weekOffset, t]),
   );
 
   if (loading) return <View style={styles.container} />;
@@ -134,7 +164,10 @@ export default function Dashboard() {
     day: "numeric",
   }).format(now);
 
-  const timeline = buildTimeline(slots, progress.completedSlots, next);
+  const period = greetingPeriod(now.getHours());
+  const greeting = firstName
+    ? t(`home.greeting.${period}.named` as TranslationKey, { name: firstName })
+    : t(`home.greeting.${period}` as TranslationKey);
 
   return (
     <ScrollView
@@ -145,22 +178,37 @@ export default function Dashboard() {
       ]}
     >
       <View style={styles.header}>
-        <Text style={styles.greeting}>{t(greetingKey(now.getHours()))}</Text>
+        <Text style={styles.greeting}>{greeting}</Text>
         <Text style={styles.title}>{t("home.today")}</Text>
         <Text style={styles.date}>{dateLabel}</Text>
       </View>
 
-      <WeekCard
-        days={weekDays}
-        runningTotal={weekTotal}
-        runningTarget={settings.timesPerDay * 7}
-        currentStreak={streak}
-        bestStreak={bestStreak}
-      />
+      <View {...weekPanResponder.panHandlers}>
+        <WeekCard
+          label={weekLabel}
+          onLabelPress={weekOffset !== 0 ? () => setWeekOffset(0) : undefined}
+          days={weekDays}
+          runningTotal={weekTotal}
+          runningTarget={settings.timesPerDay * 7}
+          currentStreak={streak}
+          bestStreak={bestStreak}
+        />
+      </View>
 
-      {timeline.length > 0 ? (
+      {slots.length > 0 ? (
         <View style={styles.timelineWrap}>
-          <Timeline items={timeline} />
+          <NextPracticeCard
+            completed={progress.completed}
+            target={settings.timesPerDay}
+            nextDue={nextDue}
+            spacingMin={spacingMin}
+            slots={slots}
+            completedSlots={progress.completedSlots}
+            next={next}
+            firstTime={settings.firstTime}
+            lastTime={settings.lastTime}
+            now={now}
+          />
         </View>
       ) : null}
 

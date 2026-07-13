@@ -1,10 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 
 import { useI18n } from "@/features/i18n";
 import { type WeekDay } from "./WeekProgress";
 
 export interface WeekCardProps {
+  label: string;
+  onLabelPress?: () => void; // set when viewing a past week, to jump back to the current one
   days: WeekDay[]; // exactly 7, Monday..Sunday
   runningTotal: number;
   runningTarget: number;
@@ -16,6 +18,8 @@ const BAR_HEIGHT = 72;
 const BAR_WIDTH = 24;
 
 export default function WeekCard({
+  label,
+  onLabelPress,
   days,
   runningTotal,
   runningTarget,
@@ -27,7 +31,13 @@ export default function WeekCard({
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
-        <Text style={styles.label}>{t("week.thisWeek")}</Text>
+        {onLabelPress ? (
+          <TouchableOpacity onPress={onLabelPress} hitSlop={8}>
+            <Text style={[styles.label, styles.labelActive]}>{label}</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.label}>{label}</Text>
+        )}
         <Text style={styles.totalText}>
           <Text style={styles.totalDone}>{runningTotal}</Text>
           {` / ${runningTarget}`}
@@ -98,6 +108,9 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1.4,
     textTransform: "uppercase",
+  },
+  labelActive: {
+    color: "#6366f1",
   },
   totalText: {
     color: "#94a3b8",

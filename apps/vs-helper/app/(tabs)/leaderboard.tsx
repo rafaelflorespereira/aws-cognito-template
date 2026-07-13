@@ -37,16 +37,22 @@ export default function Leaderboard() {
 
   if (!signedIn) {
     return (
-      <View style={[styles.center, { paddingTop: insets.top }]}>
-        <Ionicons name="trophy-outline" size={56} color="#94a3b8" />
-        <Text style={styles.blurb}>{t("leaderboard.signInBlurb")}</Text>
-        <TouchableOpacity
-          style={styles.saveBtn}
-          onPress={() => router.push("/account")}
-        >
-          <Text style={styles.saveText}>{t("leaderboard.goToAccount")}</Text>
-        </TouchableOpacity>
-      </View>
+      <SignInPrompt
+        blurb={t("leaderboard.signInBlurb")}
+        onPress={() => router.push("/account")}
+      />
+    );
+  }
+
+  // A live 401 means the session died server-side after signedIn was already
+  // true (stale local token) — same recovery as being signed out, so reuse
+  // the same prompt instead of surfacing a raw error code.
+  if (error && (error.code === "unauthorized" || error.code === "signed_out")) {
+    return (
+      <SignInPrompt
+        blurb={t("account.reauthBanner")}
+        onPress={() => router.push("/account")}
+      />
     );
   }
 
@@ -76,6 +82,26 @@ export default function Leaderboard() {
         </>
       )}
     </ScrollView>
+  );
+}
+
+function SignInPrompt({
+  blurb,
+  onPress,
+}: {
+  blurb: string;
+  onPress: () => void;
+}) {
+  const { t } = useI18n();
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.center, { paddingTop: insets.top }]}>
+      <Ionicons name="trophy-outline" size={56} color="#94a3b8" />
+      <Text style={styles.blurb}>{blurb}</Text>
+      <TouchableOpacity style={styles.saveBtn} onPress={onPress}>
+        <Text style={styles.saveText}>{t("leaderboard.goToAccount")}</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 

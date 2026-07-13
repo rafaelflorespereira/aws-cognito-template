@@ -23,7 +23,11 @@ import {
   type AuthUser,
 } from "@vs/auth";
 import { useI18n } from "@/features/i18n";
-import { syncSessionHistoryNow, syncSettingsNow } from "@/features/vs/sync";
+import {
+  syncSessionHistoryNow,
+  syncSettingsNow,
+  useNeedsReauth,
+} from "@/features/vs/sync";
 import { useLeaderboard } from "@/features/vs/useLeaderboard";
 
 const HANDLE_RE = /^[A-Za-z0-9_]{3,20}$/;
@@ -58,6 +62,8 @@ export default function Account() {
   const [lbHydrated, setLbHydrated] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const needsReauth = useNeedsReauth();
 
   useEffect(() => {
     getStoredTokens().then((t) => {
@@ -94,6 +100,7 @@ export default function Account() {
 
   async function handleSaveLeaderboard() {
     setFormError(null);
+    setSaved(false);
     if (optIn && !HANDLE_RE.test(handle)) {
       setFormError(t("leaderboard.handleInvalid"));
       return;
@@ -107,7 +114,14 @@ export default function Account() {
       } else {
         setFormError(t("leaderboard.saveFailed"));
       }
+      // The switch/handle must reflect what's actually persisted — otherwise
+      // a failed save leaves the UI claiming an opt-in that never reached
+      // the server, and the leaderboard silently stays empty with no clue why.
+      setHandle(profile.handle);
+      setOptIn(profile.leaderboardOptIn);
+      return;
     }
+    setSaved(true);
   }
 
   return (
@@ -118,6 +132,18 @@ export default function Account() {
       ]}
     >
       <Text style={styles.title}>{t("account.title")}</Text>
+
+      {user && needsReauth ? (
+        <View style={styles.reauthBanner}>
+          <Ionicons name="alert-circle" size={20} color="#b45309" />
+          <Text style={styles.reauthText}>{t("account.reauthBanner")}</Text>
+          <TouchableOpacity disabled={!request} onPress={() => promptAsync()}>
+            <Text style={styles.reauthAction}>
+              {t("account.reauthAction")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
       {user ? (
         <View style={styles.profile}>
@@ -151,7 +177,11 @@ export default function Account() {
             <TextInput
               style={styles.input}
               value={handle}
-              onChangeText={setHandle}
+              onChangeText={(v) => {
+                setHandle(v);
+                setFormError(null);
+                setSaved(false);
+              }}
               placeholder={t("leaderboard.handlePlaceholder")}
               autoCapitalize="none"
               maxLength={20}
@@ -160,10 +190,21 @@ export default function Account() {
 
           <View style={styles.switchRow}>
             <Text style={styles.switchLabel}>{t("leaderboard.optIn")}</Text>
-            <Switch value={optIn} onValueChange={setOptIn} />
+            <Switch
+              value={optIn}
+              onValueChange={(v) => {
+                setOptIn(v);
+                setFormError(null);
+                setSaved(false);
+              }}
+            />
           </View>
 
-          {formError ? <Text style={styles.error}>{formError}</Text> : null}
+          {formError ? (
+            <Text style={styles.error}>{formError}</Text>
+          ) : saved ? (
+            <Text style={styles.saved}>{t("leaderboard.saved")}</Text>
+          ) : null}
 
           <TouchableOpacity
             style={styles.saveBtn}
@@ -193,6 +234,19 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     alignSelf: "flex-start",
   },
+  reauthBanner: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: "#fffbeb",
+    borderWidth: 1,
+    borderColor: "#fde68a",
+    borderRadius: 12,
+    padding: 12,
+  },
+  reauthText: { flex: 1, fontSize: 13, color: "#92400e", lineHeight: 18 },
+  reauthAction: { fontSize: 13, fontWeight: "700", color: "#6366f1" },
   profile: { alignItems: "center", gap: 8 },
   name: { fontSize: 18, fontWeight: "700", color: "#0f172a" },
   email: { fontSize: 14, color: "#64748b" },
@@ -238,6 +292,7 @@ const styles = StyleSheet.create({
   },
   switchLabel: { fontSize: 15, color: "#334155" },
   error: { color: "#ef4444", fontSize: 13, fontWeight: "600" },
+  saved: { color: "#16a34a", fontSize: 13, fontWeight: "600" },
   saveBtn: {
     backgroundColor: "#6366f1",
     borderRadius: 14,

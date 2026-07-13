@@ -17,9 +17,11 @@ import {
 } from "./storage";
 import {
   computeSlots,
+  adaptiveSlots,
   nextSlot,
   nextDueDate,
   currentSpacingMin,
+  toHHMM,
 } from "./schedule";
 import { rescheduleAll, cancelAll, requestPermission } from "./notifications";
 import {
@@ -46,6 +48,10 @@ export interface UseSchedule {
   completeCurrent: (opts?: {
     slot?: string;
     report?: SessionReport;
+    // When the practice actually started (defaults to now). Pass this so a
+    // session is logged at the time the user began it, not whenever this
+    // function happens to run after the countdown finishes.
+    completedAt?: Date;
   }) => Promise<string>;
 }
 
@@ -87,9 +93,6 @@ export function useSchedule(): UseSchedule {
     return () => clearInterval(id);
   }, []);
 
-  const slots = useMemo(() => computeSlots(settings), [settings]);
-  const next = useMemo(() => nextSlot(slots, now), [slots, now]);
-
   const adaptiveInput = useMemo(
     () => ({
       timesPerDay: settings.timesPerDay,
@@ -97,6 +100,7 @@ export function useSchedule(): UseSchedule {
       lastTime: settings.lastTime,
       completed: progress.completed,
       lastCompletedAt: progress.lastCompletedAt,
+      completedSlots: progress.completedSlots,
     }),
     [
       settings.timesPerDay,
@@ -104,8 +108,18 @@ export function useSchedule(): UseSchedule {
       settings.lastTime,
       progress.completed,
       progress.lastCompletedAt,
+      progress.completedSlots,
     ],
   );
+
+  // Remaining slots reflow around the last completion instead of staying
+  // pinned to the original fixed grid — see adaptiveSlots in schedule.ts.
+  const slots = useMemo(
+    () => adaptiveSlots(settings, adaptiveInput, now),
+    [settings, adaptiveInput, now],
+  );
+  const next = useMemo(() => nextSlot(slots, now), [slots, now]);
+
   const nextDue = useMemo(
     () => nextDueDate(adaptiveInput, now),
     [adaptiveInput, now],
@@ -139,21 +153,34 @@ export function useSchedule(): UseSchedule {
   );
 
   const completeCurrent = useCallback(
-    async (opts?: { slot?: string; report?: SessionReport }) => {
-      const slot = opts?.slot ?? next ?? slots[progress.completed] ?? "manual";
-      const updated = await markSlotDone(slot);
+    async (opts?: {
+      slot?: string;
+      report?: SessionReport;
+      completedAt?: Date;
+    }) => {
+      // Label the completion with the actual clock time it happened at (not
+      // the adaptively-computed "next" slot) — practicing ahead of or behind
+      // schedule logs a new slot at the real time, and adaptiveSlots reflows
+      // the remaining, not-yet-done slots around it. Defaults to now, but
+      // callers should pass when the session actually started so a session
+      // isn't logged a couple of minutes late once its countdown finishes.
+      const completedAt = opts?.completedAt ?? new Date();
+      const slot =
+        opts?.slot ??
+        toHHMM(completedAt.getHours() * 60 + completedAt.getMinutes());
+      const updated = await markSlotDone(slot, completedAt);
       setProgress(updated);
       const record: SessionRecord = {
         date: updated.date,
         slot,
-        completedAt: new Date().toISOString(),
+        completedAt: completedAt.toISOString(),
       };
       await appendSessionRecord(record);
       if (opts?.report) await saveReport(opts.report);
       void pushSession(record, settings.timesPerDay);
       return slot;
     },
-    [next, slots, progress.completed, settings.timesPerDay],
+    [settings.timesPerDay],
   );
 
   return {

@@ -3,6 +3,11 @@ import type { Chakra } from "./types";
 // The 6 basic maneuvers of the Vibrational State technique (Energossomatologia).
 // Titles and descriptions are translated at render time via i18n keys
 // `maneuver.<n>.title` / `maneuver.<n>.text`.
+//
+// maneuver.1.text intentionally omits "with eyes closed" — practice.tsx shows
+// these instructions as on-screen text the user has to read, so an
+// eyes-closed cue doesn't work until there's a voice-guided narration option
+// to go with it. Reintroduce it once that lands.
 export const MANEUVERS: { n: number }[] = [
   { n: 1 },
   { n: 2 },

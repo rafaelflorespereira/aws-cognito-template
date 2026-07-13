@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { getStoredTokens, refreshAccessToken } from "@vs/auth";
 import type {
   LeaderboardEntry,
@@ -95,6 +96,40 @@ async function parseJson<T>(
   }
 }
 
+// A locally-cached token can still parse fine (so screens like Account keep
+// showing "signed in") even after the server has started rejecting it — the
+// only place that's actually visible is a 401 from a live request. This is a
+// tiny pub/sub so any screen can show a "please sign in again" prompt without
+// polling, instead of the failure only ever reaching a console.error.
+type ReauthListener = (needsReauth: boolean) => void;
+const reauthListeners = new Set<ReauthListener>();
+let needsReauth = false;
+
+function setNeedsReauth(value: boolean): void {
+  if (needsReauth === value) return;
+  needsReauth = value;
+  for (const listener of reauthListeners) listener(value);
+}
+
+export function getNeedsReauth(): boolean {
+  return needsReauth;
+}
+
+export function subscribeNeedsReauth(listener: ReauthListener): () => void {
+  reauthListeners.add(listener);
+  return () => reauthListeners.delete(listener);
+}
+
+// True once a live request has come back 401 (session expired/revoked
+// server-side); false again as soon as a request succeeds. Prefer this over
+// "is there a token in SecureStore" checks, which stay true even after the
+// server has stopped accepting that token.
+export function useNeedsReauth(): boolean {
+  const [value, setValue] = useState(getNeedsReauth());
+  useEffect(() => subscribeNeedsReauth(setValue), []);
+  return value;
+}
+
 async function authedRequest(
   path: string,
   init: RequestInit = {},
@@ -142,6 +177,7 @@ async function authedRequest(
       if (refreshed) res = await attempt(refreshed.idToken);
     }
     if (!res.ok) {
+      if (res.status === 401) setNeedsReauth(true);
       const body = await res.clone().text().catch(() => "");
       return {
         data: null,
@@ -155,6 +191,7 @@ async function authedRequest(
         },
       };
     }
+    setNeedsReauth(false);
     return { data: res, error: null };
   } catch {
     return {

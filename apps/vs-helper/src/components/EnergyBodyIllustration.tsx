@@ -43,9 +43,35 @@ const FREQ_START_HZ = 0.12;
 const FREQ_END_HZ = 4.0;
 const FREQ_RAMP_POWER = 2.4;
 
+const BUBBLE_COUNT = 6;
+const BUBBLE_TOP_Y = 40;
+const BUBBLE_BOTTOM_Y = 400;
+const BUBBLE_MIN_X = 62;
+const BUBBLE_MAX_X = 138;
+
+interface Bubble {
+  x: number;
+  radius: number;
+  duration: number;
+  delay: number;
+}
+
+function makeBubbles(count: number): Bubble[] {
+  return Array.from({ length: count }, () => ({
+    x: BUBBLE_MIN_X + Math.random() * (BUBBLE_MAX_X - BUBBLE_MIN_X),
+    radius: 3 + Math.random() * 4,
+    duration: 3200 + Math.random() * 2600,
+    delay: Math.random() * 3000,
+  }));
+}
+
 interface Props {
   progress: number;
   height?: number;
+  // Whether a practice session is running. Drives the glowing bubbles rising
+  // inside the silhouette, independent of the orb's own descent/vibration
+  // phases so they stay on for the whole session.
+  active?: boolean;
 }
 
 function flareInputRange(cy: number) {
@@ -64,6 +90,7 @@ function flareInputRange(cy: number) {
 export default function EnergyBodyIllustration({
   progress,
   height = 260,
+  active = false,
 }: Props) {
   const clamped = Math.max(0, Math.min(1, progress));
   const posValue = useRef(new Animated.Value(0)).current;
@@ -72,6 +99,53 @@ export default function EnergyBodyIllustration({
   const inVibrationRef = useRef(false);
   const instFreqRef = useRef(FREQ_START_HZ);
   const phaseRef = useRef(0);
+
+  const bubbles = useRef(makeBubbles(BUBBLE_COUNT)).current;
+  const bubbleProgress = useRef(
+    bubbles.map(() => new Animated.Value(0)),
+  ).current;
+
+  useEffect(() => {
+    if (!active) {
+      bubbleProgress.forEach((value) => {
+        value.stopAnimation();
+        value.setValue(0);
+      });
+      return;
+    }
+
+    // Not Animated.loop(sequence([delay, timing])): looping a composite
+    // sequence doesn't reliably reset the value to 0 before each repeat, so
+    // after the first rise every following "loop" animates 1 -> 1 (no
+    // visible motion, and opacity is 0 at value 1) — it looks like the
+    // animation just stopped. Resetting explicitly before each rise avoids
+    // relying on that behavior at all.
+    let cancelled = false;
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    function rise(i: number, delay: number) {
+      const timeout = setTimeout(() => {
+        if (cancelled) return;
+        bubbleProgress[i].setValue(0);
+        Animated.timing(bubbleProgress[i], {
+          toValue: 1,
+          duration: bubbles[i].duration,
+          useNativeDriver: false,
+        }).start(({ finished }) => {
+          if (finished && !cancelled) rise(i, 0);
+        });
+      }, delay);
+      timeouts.push(timeout);
+    }
+
+    bubbles.forEach((bubble, i) => rise(i, bubble.delay));
+
+    return () => {
+      cancelled = true;
+      timeouts.forEach(clearTimeout);
+      bubbleProgress.forEach((value) => value.stopAnimation());
+    };
+  }, [active, bubbleProgress, bubbles]);
 
   useEffect(() => {
     if (clamped < DESCENT_END) {
@@ -173,6 +247,11 @@ export default function EnergyBodyIllustration({
             <Stop offset="0%" stopColor="#e0e7ff" stopOpacity={0.09} />
             <Stop offset="100%" stopColor="#818cf8" stopOpacity={0.045} />
           </LinearGradient>
+          <RadialGradient id="bubbleGradient" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#e0e7ff" stopOpacity={0.85} />
+            <Stop offset="45%" stopColor="#c7d2fe" stopOpacity={0.4} />
+            <Stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+          </RadialGradient>
           <ClipPath id="bodyClip">{BODY_SHAPES}</ClipPath>
         </Defs>
 
@@ -221,6 +300,32 @@ export default function EnergyBodyIllustration({
             fill="#f5f7ff"
             opacity={0.35}
           />
+        </G>
+
+        {/* Rendered above the orb/halo so the bubbles stay visible once the
+            orb starts vibrating fast and sweeping large, opaque ellipses
+            across the same area. */}
+        <G clipPath="url(#bodyClip)">
+          {bubbles.map((bubble, i) => {
+            const cy = bubbleProgress[i].interpolate({
+              inputRange: [0, 1],
+              outputRange: [BUBBLE_BOTTOM_Y, BUBBLE_TOP_Y],
+            });
+            const opacity = bubbleProgress[i].interpolate({
+              inputRange: [0, 0.15, 0.85, 1],
+              outputRange: [0, 0.8, 0.8, 0],
+            });
+            return (
+              <AnimatedCircle
+                key={i}
+                cx={bubble.x}
+                cy={cy}
+                r={bubble.radius}
+                fill="url(#bubbleGradient)"
+                opacity={opacity}
+              />
+            );
+          })}
         </G>
 
         {CHAKRA_POINTS.map((point) => {

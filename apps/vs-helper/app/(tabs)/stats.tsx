@@ -56,6 +56,7 @@ export default function Stats() {
               lastTime: settings.lastTime,
               completed: progress.completed,
               lastCompletedAt: progress.lastCompletedAt,
+              completedSlots: progress.completedSlots,
             },
             new Date(),
           ),

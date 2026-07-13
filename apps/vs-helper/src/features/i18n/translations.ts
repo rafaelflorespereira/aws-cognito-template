@@ -32,19 +32,22 @@ export const translations = {
     "home.greeting.afternoon": "Good afternoon",
     "home.greeting.evening": "Good evening",
     "home.greeting.night": "Good night",
+    "home.greeting.morning.named": "Good morning, {name}",
+    "home.greeting.afternoon.named": "Good afternoon, {name}",
+    "home.greeting.evening.named": "Good evening, {name}",
+    "home.greeting.night.named": "Good night, {name}",
     "home.practiceNow": "Practice now",
     "week.thisWeek": "THIS WEEK",
     "week.streak": "{days}-day streak",
     "week.best": "best {n}",
-    "timeline.done": "done",
-    "timeline.now": "NOW",
-    "timeline.nextUp": "NEXT UP",
 
     "next.caption": "Next practice",
     "next.allDone": "All done for today",
     "next.dueNow": "Due now",
     "next.getReady": "Get ready",
     "next.spacing": "~{min} min between sessions",
+    "next.minToNext": "MIN TO NEXT",
+    "next.at": "Next at",
 
     "practice.start": "Start",
     "practice.finish": "Finish now",
@@ -85,6 +88,9 @@ export const translations = {
     "account.loginSubtitle":
       "Signing in lets your sessions count across devices (optional).",
     "account.signOut": "Sign out",
+    "account.reauthBanner":
+      "Your session expired. Sign in again to keep syncing.",
+    "account.reauthAction": "Reconnect",
 
     "leaderboard.title": "Leaderboard",
     "leaderboard.intro":
@@ -98,6 +104,7 @@ export const translations = {
     "leaderboard.authRequired": "Please sign in again to save profile changes.",
     "leaderboard.saving": "Saving...",
     "leaderboard.save": "Save",
+    "leaderboard.saved": "Saved!",
     "leaderboard.colRank": "#",
     "leaderboard.colPlayer": "Player",
     "leaderboard.colStreak": "Streak",
@@ -139,7 +146,7 @@ export const translations = {
 
     "maneuver.1.title": "Impulsion",
     "maneuver.1.text":
-      "Stand upright with your feet apart and eyes closed. Let your arms hang. Drive the bioenergy flow, by the impulse of your will, from your head down to your hands and feet.",
+      "Stand upright with your feet apart. Let your arms hang. Drive the bioenergy flow, by the impulse of your will, from your head down to your hands and feet.",
     "maneuver.2.title": "Sensations",
     "maneuver.2.text":
       "Bring the flow back, by decided will, from your feet up to your head. Notice, through sensations, the direction of the flow from bottom to top.",
@@ -187,19 +194,22 @@ export const translations = {
     "home.greeting.afternoon": "Boa tarde",
     "home.greeting.evening": "Boa noite",
     "home.greeting.night": "Boa noite",
+    "home.greeting.morning.named": "Bom dia, {name}",
+    "home.greeting.afternoon.named": "Boa tarde, {name}",
+    "home.greeting.evening.named": "Boa noite, {name}",
+    "home.greeting.night.named": "Boa noite, {name}",
     "home.practiceNow": "Praticar agora",
     "week.thisWeek": "ESTA SEMANA",
     "week.streak": "sequência de {days} dias",
     "week.best": "melhor {n}",
-    "timeline.done": "feito",
-    "timeline.now": "AGORA",
-    "timeline.nextUp": "A SEGUIR",
 
     "next.caption": "Próxima prática",
     "next.allDone": "Tudo feito por hoje",
     "next.dueNow": "Agora",
     "next.getReady": "Prepare-se",
     "next.spacing": "~{min} min entre sessões",
+    "next.minToNext": "MIN PARA A PRÓXIMA",
+    "next.at": "Próxima às",
 
     "practice.start": "Começar",
     "practice.finish": "Finalizar agora",
@@ -240,6 +250,9 @@ export const translations = {
     "account.loginSubtitle":
       "Entrar permite que suas sessões contem em vários dispositivos (opcional).",
     "account.signOut": "Sair",
+    "account.reauthBanner":
+      "Sua sessão expirou. Entre novamente para continuar sincronizando.",
+    "account.reauthAction": "Reconectar",
 
     "leaderboard.title": "Ranking",
     "leaderboard.intro":
@@ -254,6 +267,7 @@ export const translations = {
       "Faça login novamente para salvar as alterações do perfil.",
     "leaderboard.saving": "Salvando...",
     "leaderboard.save": "Salvar",
+    "leaderboard.saved": "Salvo!",
     "leaderboard.colRank": "#",
     "leaderboard.colPlayer": "Jogador",
     "leaderboard.colStreak": "Sequência",
@@ -295,7 +309,7 @@ export const translations = {
 
     "maneuver.1.title": "Impulsão",
     "maneuver.1.text":
-      "Fique em pé com os pés afastados e os olhos fechados. Deixe os braços soltos. Impulsione o fluxo bioenergético, pelo impulso da vontade, da cabeça até as mãos e os pés.",
+      "Fique em pé com os pés afastados. Deixe os braços soltos. Impulsione o fluxo bioenergético, pelo impulso da vontade, da cabeça até as mãos e os pés.",
     "maneuver.2.title": "Sensações",
     "maneuver.2.text":
       "Traga o fluxo de volta, por vontade decidida, dos pés até a cabeça. Perceba, pelas sensações, a direção do fluxo de baixo para cima.",
@@ -343,19 +357,22 @@ export const translations = {
     "home.greeting.afternoon": "Buenas tardes",
     "home.greeting.evening": "Buenas noches",
     "home.greeting.night": "Buenas noches",
+    "home.greeting.morning.named": "Buenos días, {name}",
+    "home.greeting.afternoon.named": "Buenas tardes, {name}",
+    "home.greeting.evening.named": "Buenas noches, {name}",
+    "home.greeting.night.named": "Buenas noches, {name}",
     "home.practiceNow": "Practicar ahora",
     "week.thisWeek": "ESTA SEMANA",
     "week.streak": "racha de {days} días",
     "week.best": "mejor {n}",
-    "timeline.done": "hecho",
-    "timeline.now": "AHORA",
-    "timeline.nextUp": "SIGUIENTE",
 
     "next.caption": "Próxima práctica",
     "next.allDone": "Todo listo por hoy",
     "next.dueNow": "Ahora",
     "next.getReady": "Prepárate",
     "next.spacing": "~{min} min entre sesiones",
+    "next.minToNext": "MIN PARA LA PRÓXIMA",
+    "next.at": "Próxima a las",
 
     "practice.start": "Empezar",
     "practice.finish": "Finalizar ahora",
@@ -396,6 +413,9 @@ export const translations = {
     "account.loginSubtitle":
       "Iniciar sesión permite que tus sesiones cuenten en varios dispositivos (opcional).",
     "account.signOut": "Cerrar sesión",
+    "account.reauthBanner":
+      "Tu sesión expiró. Inicia sesión de nuevo para seguir sincronizando.",
+    "account.reauthAction": "Reconectar",
 
     "leaderboard.title": "Clasificación",
     "leaderboard.intro":
@@ -410,6 +430,7 @@ export const translations = {
       "Vuelve a iniciar sesión para guardar los cambios del perfil.",
     "leaderboard.saving": "Guardando...",
     "leaderboard.save": "Guardar",
+    "leaderboard.saved": "¡Guardado!",
     "leaderboard.colRank": "#",
     "leaderboard.colPlayer": "Jugador",
     "leaderboard.colStreak": "Racha",
@@ -452,7 +473,7 @@ export const translations = {
 
     "maneuver.1.title": "Impulsión",
     "maneuver.1.text":
-      "Ponte de pie con los pies separados y los ojos cerrados. Deja caer los brazos. Impulsa el flujo bioenergético, por el impulso de tu voluntad, desde la cabeza hasta las manos y los pies.",
+      "Ponte de pie con los pies separados. Deja caer los brazos. Impulsa el flujo bioenergético, por el impulso de tu voluntad, desde la cabeza hasta las manos y los pies.",
     "maneuver.2.title": "Sensaciones",
     "maneuver.2.text":
       "Devuelve el flujo, con voluntad decidida, desde los pies hasta la cabeza. Nota, a través de las sensaciones, la dirección del flujo de abajo hacia arriba.",
@@ -500,19 +521,22 @@ export const translations = {
     "home.greeting.afternoon": "Bon après-midi",
     "home.greeting.evening": "Bonsoir",
     "home.greeting.night": "Bonne nuit",
+    "home.greeting.morning.named": "Bonjour, {name}",
+    "home.greeting.afternoon.named": "Bon après-midi, {name}",
+    "home.greeting.evening.named": "Bonsoir, {name}",
+    "home.greeting.night.named": "Bonne nuit, {name}",
     "home.practiceNow": "Pratiquer maintenant",
     "week.thisWeek": "CETTE SEMAINE",
     "week.streak": "série de {days} jours",
     "week.best": "meilleur {n}",
-    "timeline.done": "fait",
-    "timeline.now": "MAINTENANT",
-    "timeline.nextUp": "À SUIVRE",
 
     "next.caption": "Prochaine pratique",
     "next.allDone": "Tout est fait pour aujourd'hui",
     "next.dueNow": "Maintenant",
     "next.getReady": "Préparez-vous",
     "next.spacing": "~{min} min entre les séances",
+    "next.minToNext": "MIN AVANT LA PROCHAINE",
+    "next.at": "Prochaine à",
 
     "practice.start": "Commencer",
     "practice.finish": "Terminer maintenant",
@@ -553,6 +577,9 @@ export const translations = {
     "account.loginSubtitle":
       "Se connecter permet à vos séances de compter sur plusieurs appareils (facultatif).",
     "account.signOut": "Se déconnecter",
+    "account.reauthBanner":
+      "Votre session a expiré. Reconnectez-vous pour continuer la synchronisation.",
+    "account.reauthAction": "Se reconnecter",
 
     "leaderboard.title": "Classement",
     "leaderboard.intro":
@@ -567,6 +594,7 @@ export const translations = {
       "Reconnectez-vous pour enregistrer les modifications du profil.",
     "leaderboard.saving": "Enregistrement...",
     "leaderboard.save": "Enregistrer",
+    "leaderboard.saved": "Enregistré !",
     "leaderboard.colRank": "#",
     "leaderboard.colPlayer": "Joueur",
     "leaderboard.colStreak": "Série",
@@ -609,7 +637,7 @@ export const translations = {
 
     "maneuver.1.title": "Impulsion",
     "maneuver.1.text":
-      "Tenez-vous droit, les pieds écartés et les yeux fermés. Laissez pendre vos bras. Poussez le flux bioénergétique, par l'impulsion de votre volonté, de la tête vers les mains et les pieds.",
+      "Tenez-vous droit, les pieds écartés. Laissez pendre vos bras. Poussez le flux bioénergétique, par l'impulsion de votre volonté, de la tête vers les mains et les pieds.",
     "maneuver.2.title": "Sensations",
     "maneuver.2.text":
       "Ramenez le flux, par une volonté décidée, des pieds vers la tête. Remarquez, par les sensations, la direction du flux de bas en haut.",
@@ -659,19 +687,22 @@ export const translations = {
     "home.greeting.afternoon": "Buon pomeriggio",
     "home.greeting.evening": "Buonasera",
     "home.greeting.night": "Buonanotte",
+    "home.greeting.morning.named": "Buongiorno, {name}",
+    "home.greeting.afternoon.named": "Buon pomeriggio, {name}",
+    "home.greeting.evening.named": "Buonasera, {name}",
+    "home.greeting.night.named": "Buonanotte, {name}",
     "home.practiceNow": "Pratica ora",
     "week.thisWeek": "QUESTA SETTIMANA",
     "week.streak": "serie di {days} giorni",
     "week.best": "migliore {n}",
-    "timeline.done": "fatto",
-    "timeline.now": "ORA",
-    "timeline.nextUp": "PROSSIMA",
 
     "next.caption": "Prossima pratica",
     "next.allDone": "Tutto fatto per oggi",
     "next.dueNow": "Adesso",
     "next.getReady": "Preparati",
     "next.spacing": "~{min} min tra le sessioni",
+    "next.minToNext": "MIN ALLA PROSSIMA",
+    "next.at": "Prossima alle",
 
     "practice.start": "Inizia",
     "practice.finish": "Termina ora",
@@ -712,6 +743,9 @@ export const translations = {
     "account.loginSubtitle":
       "Accedendo, le tue sessioni contano su più dispositivi (facoltativo).",
     "account.signOut": "Esci",
+    "account.reauthBanner":
+      "La sessione è scaduta. Accedi di nuovo per continuare la sincronizzazione.",
+    "account.reauthAction": "Riconnetti",
 
     "leaderboard.title": "Classifica",
     "leaderboard.intro":
@@ -726,6 +760,7 @@ export const translations = {
       "Accedi di nuovo per salvare le modifiche del profilo.",
     "leaderboard.saving": "Salvataggio...",
     "leaderboard.save": "Salva",
+    "leaderboard.saved": "Salvato!",
     "leaderboard.colRank": "#",
     "leaderboard.colPlayer": "Giocatore",
     "leaderboard.colStreak": "Serie",
@@ -768,7 +803,7 @@ export const translations = {
 
     "maneuver.1.title": "Impulso",
     "maneuver.1.text":
-      "Stai in piedi con i piedi divaricati e gli occhi chiusi. Lascia pendere le braccia. Spingi il flusso bioenergetico, per impulso della volontà, dalla testa fino alle mani e ai piedi.",
+      "Stai in piedi con i piedi divaricati. Lascia pendere le braccia. Spingi il flusso bioenergetico, per impulso della volontà, dalla testa fino alle mani e ai piedi.",
     "maneuver.2.title": "Sensazioni",
     "maneuver.2.text":
       "Riporta il flusso, con volontà decisa, dai piedi fino alla testa. Nota, attraverso le sensazioni, la direzione del flusso dal basso verso l'alto.",

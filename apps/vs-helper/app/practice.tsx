@@ -82,6 +82,7 @@ export default function Practice() {
   const [running, setRunning] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startedAtRef = useRef<Date | null>(null);
 
   useEffect(() => {
     setRemaining(settings.sessionDurationSec);
@@ -107,7 +108,9 @@ export default function Practice() {
     setFinishing(true);
     setRunning(false);
     try {
-      const slot = await completeCurrent();
+      const slot = await completeCurrent({
+        completedAt: startedAtRef.current ?? undefined,
+      });
       router.replace({ pathname: "/report", params: { slot } });
     } catch {
       // Let the user retry rather than leaving the screen wedged.
@@ -177,6 +180,7 @@ export default function Practice() {
           <EnergyBodyIllustration
             progress={elapsedRatio}
             height={ILLUSTRATION_HEIGHT}
+            active={running}
           />
         </View>
 
@@ -236,12 +240,18 @@ export default function Practice() {
             <TouchableOpacity onPress={finish} hitSlop={12}>
               <Text style={styles.finish}>{t("practice.finishShort")}</Text>
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+              <Text style={styles.cancel}>{t("practice.cancel")}</Text>
+            </TouchableOpacity>
           </>
         ) : (
           <>
             <TouchableOpacity
               style={styles.startBtn}
-              onPress={() => setRunning(true)}
+              onPress={() => {
+                startedAtRef.current = new Date();
+                setRunning(true);
+              }}
               activeOpacity={0.85}
             >
               <Text style={styles.startText}>{t("practice.start")}</Text>
