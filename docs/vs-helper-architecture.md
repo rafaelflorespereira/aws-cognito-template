@@ -155,6 +155,14 @@ A simple, focused screen to run one VS session.
 - On finish → mark the current slot complete, update progress, then navigate to the
   **report** screen (which can be skipped for on-the-run practice).
 
+**Next step — audio guide**: today's guided steps are text-only (phrases
+crossfading over the illustration, per §4.2 above). Add an optional spoken
+audio guide that narrates each of the 6 maneuvers in sync with the step
+timer, so the practice can run eyes-closed. Should respect the same
+`showGuidedSteps` toggle (or a new dedicated one), ship per-language voice
+lines matching the existing `maneuver.*` translation keys, and mute cleanly
+when the device is on silent/DND.
+
 ### 4.3 Report screen (`report.tsx`)
 
 An optional post-session reflection shown after a session completes. Designed to be
@@ -487,7 +495,7 @@ logs it before `promptAsync()` so you can register the exact string.
 | ----- | --------------------------------------------------------------------------------- | ------ |
 | 1     | On-device MVP: settings, schedule, notifications, practice, report, gamification | Done |
 | 2     | Cloud sync of settings/sessions/stats (Cognito identity + API); richer statistics | Settings + Sessions + Stats sync shipped — see [`vs-helper-backend.md`](vs-helper-backend.md). Reports/achievements sync and richer statistics still open |
-| 3     | Global **leaderboard**; situational reminders (the 20 situations); group mode    | Leaderboard shipped — see [`vs-helper-backend.md`](vs-helper-backend.md). Situational reminders and group mode not started |
+| 3     | Global **leaderboard**; situational reminders (the 20 situations); group mode; **audio guide** for the practice screen (§4.2) | Leaderboard shipped — see [`vs-helper-backend.md`](vs-helper-backend.md). Situational reminders, group mode, and the practice audio guide not started |
 
 ## 11. Leaderboard (scores window)
 
