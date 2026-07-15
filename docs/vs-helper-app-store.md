@@ -44,20 +44,46 @@ App Store review requires these to be present and stable — all already set:
 > `"appVersionSource": "remote"` with `"autoIncrement": true`, so EAS bumps the
 > build number on each production build.
 
-## 3. Configure secrets (env vars) for the build
+## 3. Configure environment variables for the build
 
 Cloud builds do **not** read your local `.env`. Push each `EXPO_PUBLIC_*` value
-as an EAS secret so it is inlined at build time:
+as an EAS **environment variable** so it is inlined at build time. These values
+are public (inlined into the JS bundle; the Cognito App Client is a public PKCE
+client with no secret), so use `--visibility plaintext`.
+
+The helper script `apps/vs-helper/eas-push-env.sh` reads `.env` and pushes every
+`EXPO_PUBLIC_*` key to the `production`, `preview`, and `development` environments:
 
 ```bash
-eas secret:create --scope project --name EXPO_PUBLIC_COGNITO_ISSUER --value https://cognito-idp.<region>.amazonaws.com/<pool-id>
-eas secret:create --scope project --name EXPO_PUBLIC_USER_POOL_CLIENT_ID --value <client-id>
-eas secret:create --scope project --name EXPO_PUBLIC_LOGOUT_URI --value vshelper://
-eas secret:create --scope project --name EXPO_PUBLIC_APP_SCHEME --value vshelper
-# Optional — cloud sync backend (infra/vs-helper-backend, see vs-helper-backend.md).
-# Omit this secret and the app runs fully on-device; sync silently no-ops without it.
-eas secret:create --scope project --name EXPO_PUBLIC_API_BASE_URL --value https://<api-id>.execute-api.<region>.amazonaws.com
+bash eas-push-env.sh
+eas env:list production   # verify all vars are present
 ```
+
+Or create them manually:
+
+```bash
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_COGNITO_ISSUER --value https://cognito-idp.<region>.amazonaws.com/<pool-id>
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_USER_POOL_CLIENT_ID --value <client-id>
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_LOGOUT_URI --value vshelper://
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_APP_SCHEME --value vshelper
+# Optional — cloud sync backend (infra/vs-helper-backend, see vs-helper-backend.md).
+# Omit this var and the app runs fully on-device; sync silently no-ops without it.
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_API_BASE_URL --value https://<api-id>.execute-api.<region>.amazonaws.com
+```
+
+> `eas secret:*` is deprecated — use `eas env:*`. Each build profile in
+> [`eas.json`](../apps/vs-helper/eas.json) sets `"environment"` so the build
+> pulls the matching set of variables.
 
 ## 4. Point Cognito at the production scheme
 
@@ -121,7 +147,7 @@ your own accounts (Apple, Expo/EAS, App Store Connect) and can't be automated.
 - [ ] Apple Developer membership active
 - [ ] App record created in App Store Connect (bundle ID matches)
 - [ ] `expo.version` bumped for this release
-- [ ] EAS secrets set for all `EXPO_PUBLIC_*` vars (§3 above)
+- [ ] EAS environment variables set for all `EXPO_PUBLIC_*` vars (§3 above)
 - [ ] Cognito callback/sign-out URLs include `vshelper://callback` and `vshelper://`
 - [ ] `eas.json` submit credentials filled in (`appleId`, `appleTeamId`, `ascAppId`)
 - [ ] Google OAuth consent screen **Published** (not Testing)
@@ -144,6 +170,6 @@ version changes.
 | -------------------------------------------- | --------------------------------------------------------------------------------- |
 | `Invalid bundle identifier`                  | Bundle ID in `app.json` must match the App Store Connect app record exactly.      |
 | Build succeeds but login fails in prod       | Add `vshelper://callback` / `vshelper://` to the Cognito App Client URLs.         |
-| `EXPO_PUBLIC_*` undefined in the store build | Values must be set as **EAS secrets**; local `.env` is not used for cloud builds. |
+| `EXPO_PUBLIC_*` undefined in the store build | Values must be set as **EAS environment variables** in the `production` environment (`eas env:list production`); local `.env` is not used for cloud builds. |
 | Icon rejected                                | Use a 1024×1024 PNG with **no alpha channel**.                                    |
 | Missing compliance / privacy                 | Complete the export-compliance and App Privacy sections; publish [`vs-helper-privacy-policy.md`](vs-helper-privacy-policy.md) and link it. |

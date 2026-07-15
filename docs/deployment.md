@@ -140,13 +140,21 @@ eas build:configure
 eas build --platform all
 ```
 
-Set EAS secrets:
+Set EAS environment variables (`eas secret:*` is deprecated — use `eas env:*`):
 
 ```bash
-eas secret:create --scope project --name EXPO_PUBLIC_COGNITO_ISSUER --value https://cognito-idp.us-east-1.amazonaws.com/us-east-1_xxxxxxxxx
-eas secret:create --scope project --name EXPO_PUBLIC_USER_POOL_CLIENT_ID --value <value>
-eas secret:create --scope project --name EXPO_PUBLIC_LOGOUT_URI --value myapp://
-eas secret:create --scope project --name EXPO_PUBLIC_APP_SCHEME --value myapp
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_COGNITO_ISSUER --value https://cognito-idp.us-east-1.amazonaws.com/us-east-1_xxxxxxxxx
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_USER_POOL_CLIENT_ID --value <value>
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_LOGOUT_URI --value myapp://
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_APP_SCHEME --value myapp
 ```
 
 ## Production checklist

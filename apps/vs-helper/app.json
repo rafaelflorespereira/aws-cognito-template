@@ -21,7 +21,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rafaelflorespereira.vshelper"
+      "bundleIdentifier": "com.rafaelflorespereira.vshelper",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.rafaelflorespereira.vshelper",
@@ -42,6 +45,13 @@
       ],
       "@react-native-community/datetimepicker",
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "47a0c1cc-91c3-4be1-8235-448088392f45"
+      }
+    },
+    "owner": "rafaelflorespereira"
   }
 }

@@ -42,18 +42,36 @@ Already set:
 > uses `"appVersionSource": "remote"` with `"autoIncrement": true`, so EAS bumps
 > `versionCode` on each production build.
 
-## 3. Configure secrets (env vars) for the build
+## 3. Configure environment variables for the build
 
 If you already set these up for the iOS build (same EAS project), skip this —
-secrets are shared across platforms in one EAS project:
+environment variables are shared across platforms in one EAS project. The helper
+script pushes every `EXPO_PUBLIC_*` value from `.env` to all environments:
 
 ```bash
-eas secret:create --scope project --name EXPO_PUBLIC_COGNITO_ISSUER --value https://cognito-idp.<region>.amazonaws.com/<pool-id>
-eas secret:create --scope project --name EXPO_PUBLIC_USER_POOL_CLIENT_ID --value <client-id>
-eas secret:create --scope project --name EXPO_PUBLIC_LOGOUT_URI --value vshelper://
-eas secret:create --scope project --name EXPO_PUBLIC_APP_SCHEME --value vshelper
+bash eas-push-env.sh
+eas env:list production   # verify
+```
+
+Or create them manually (`eas secret:*` is deprecated — use `eas env:*`):
+
+```bash
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_COGNITO_ISSUER --value https://cognito-idp.<region>.amazonaws.com/<pool-id>
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_USER_POOL_CLIENT_ID --value <client-id>
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_LOGOUT_URI --value vshelper://
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_APP_SCHEME --value vshelper
 # Optional — cloud sync backend (infra/vs-helper-backend, see vs-helper-backend.md).
-eas secret:create --scope project --name EXPO_PUBLIC_API_BASE_URL --value https://<api-id>.execute-api.<region>.amazonaws.com
+eas env:create --scope project --visibility plaintext \
+  --environment production --environment preview --environment development \
+  --name EXPO_PUBLIC_API_BASE_URL --value https://<api-id>.execute-api.<region>.amazonaws.com
 ```
 
 ## 4. Point Cognito at the production scheme

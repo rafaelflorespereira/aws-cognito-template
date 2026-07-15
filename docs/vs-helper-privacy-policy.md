@@ -1,10 +1,11 @@
 # Vibrational State — Privacy Policy
 
-_Last updated: 2026-07-06_
+_Last updated: 2026-07-15_
 
-This policy covers the **Vibrational State** app ("the app"). Host this page
-somewhere public (e.g. GitHub Pages) and put its URL in App Store Connect's
-App Privacy section — Apple requires a live privacy policy URL before review.
+This policy covers the **Vibrational State** app ("the app"). The published,
+public version lives at [`privacy-policy.html`](privacy-policy.html) (served via
+GitHub Pages); put that URL in App Store Connect's App Privacy section — Apple
+requires a live privacy policy URL before review.
 
 ## What we collect
 
@@ -57,5 +58,4 @@ We'll update this page if what the app collects changes, and update the
 
 ## Contact
 
-<!-- TODO: replace with a real support/contact email before publishing -->
-support@example.com
+rafaelflorespereira7@gmail.com
