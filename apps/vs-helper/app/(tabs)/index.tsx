@@ -2,7 +2,6 @@ import { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
   PanResponder,
@@ -15,8 +14,10 @@ import { loadHistory, todayStr } from "@/features/vs/storage";
 import { sessionCountsByDate } from "@/features/vs/schedule";
 import { computeStats } from "@vs/shared";
 import { useI18n, type TranslationKey } from "@/features/i18n";
-import WeekCard from "@/components/WeekCard";
-import NextPracticeCard from "@/components/NextPracticeCard";
+import TodayCard from "@/components/TodayCard";
+import NextPracticeRow from "@/components/NextPracticeRow";
+import WeekStripCard from "@/components/WeekStripCard";
+import PrimaryActionButton from "@/components/PrimaryActionButton";
 import { type WeekDay } from "@/components/WeekProgress";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -158,8 +159,12 @@ export default function Dashboard() {
 
   if (loading) return <View style={styles.container} />;
 
-  const dateLabel = new Intl.DateTimeFormat(lang, {
+  // The design's big title is the live current day (not a static "Today"
+  // label): the weekday leads, with the month + day beneath it.
+  const dayLabel = new Intl.DateTimeFormat(lang, {
     weekday: "long",
+  }).format(now);
+  const dateLabel = new Intl.DateTimeFormat(lang, {
     month: "long",
     day: "numeric",
   }).format(now);
@@ -168,7 +173,9 @@ export default function Dashboard() {
   const greeting = firstName
     ? t(`home.greeting.${period}.named` as TranslationKey, { name: firstName })
     : t(`home.greeting.${period}` as TranslationKey);
-  const tagline = t(`home.tagline.${period}` as TranslationKey);
+
+  const target = settings.timesPerDay;
+  const remainingAfter = Math.max(0, target - progress.completed - 1);
 
   return (
     <ScrollView
@@ -179,49 +186,47 @@ export default function Dashboard() {
       ]}
     >
       <View style={styles.header}>
-        <Text style={styles.greeting}>{greeting}</Text>
+        <Text style={styles.greeting}>{greeting.toUpperCase()}</Text>
+        <Text style={styles.title}>{dayLabel}</Text>
         <Text style={styles.date}>{dateLabel}</Text>
-        <Text style={styles.tagline}>{tagline}</Text>
       </View>
 
+      {slots.length > 0 ? (
+        <TodayCard
+          completed={progress.completed}
+          target={target}
+          next={next}
+          slots={slots}
+          firstTime={settings.firstTime}
+          lastTime={settings.lastTime}
+        />
+      ) : null}
+
+      {slots.length > 0 ? (
+        <NextPracticeRow
+          nextDue={nextDue}
+          now={now}
+          remainingAfter={remainingAfter}
+        />
+      ) : null}
+
       <View {...weekPanResponder.panHandlers}>
-        <WeekCard
+        <WeekStripCard
           label={weekLabel}
           onLabelPress={weekOffset !== 0 ? () => setWeekOffset(0) : undefined}
           days={weekDays}
           runningTotal={weekTotal}
           runningTarget={settings.timesPerDay * 7}
-          currentStreak={streak}
           bestStreak={bestStreak}
         />
       </View>
 
-      {slots.length > 0 ? (
-        <View style={styles.timelineWrap}>
-          <NextPracticeCard
-            completed={progress.completed}
-            target={settings.timesPerDay}
-            nextDue={nextDue}
-            spacingMin={spacingMin}
-            slots={slots}
-            completedSlots={progress.completedSlots}
-            next={next}
-            firstTime={settings.firstTime}
-            lastTime={settings.lastTime}
-            now={now}
-          />
-        </View>
-      ) : null}
-
       <View style={styles.spacer} />
 
-      <TouchableOpacity
-        style={styles.primary}
+      <PrimaryActionButton
+        label={t("home.practiceNow")}
         onPress={() => router.push("/practice")}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.primaryText}>{t("home.practiceNow")}</Text>
-      </TouchableOpacity>
+      />
     </ScrollView>
   );
 }
@@ -240,15 +245,22 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   greeting: {
-    fontSize: 15,
-    fontWeight: "600",
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 1,
     color: "#6366f1",
   },
-  date: {
-    fontSize: 26,
-    fontWeight: "700",
+  title: {
+    fontSize: 34,
+    fontWeight: "800",
     color: "#0f172a",
-    letterSpacing: -0.4,
+    letterSpacing: -0.6,
+    textTransform: "capitalize",
+  },
+  date: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#94a3b8",
     textTransform: "capitalize",
   },
   tagline: {
@@ -262,16 +274,5 @@ const styles = StyleSheet.create({
   spacer: {
     flexGrow: 1,
     minHeight: 16,
-  },
-  primary: {
-    backgroundColor: "#ede9fe",
-    borderRadius: 16,
-    paddingVertical: 18,
-    alignItems: "center",
-  },
-  primaryText: {
-    color: "#4f46e5",
-    fontSize: 17,
-    fontWeight: "700",
   },
 });
