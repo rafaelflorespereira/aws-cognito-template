@@ -1,99 +1,140 @@
-# AWS Cognito + Google SSO — Expo Template
+# Vibrational State (VS) Helper
 
-A production-ready authentication template using **AWS Cognito** with **Google OAuth 2.0** (Single Sign-On), built with **Expo** (React Native). The Cognito User Pool is configured directly in the **AWS Console**.
+A mobile app that helps you practice the **Vibrational State (VS / _Estado Vibracional_)** — a
+bioenergetic self-defense technique from Conscientiology — many times throughout your day.
 
-## Features
+Because the technique is meant to be repeated ~20 times daily, the app schedules
+evenly-spaced reminders, guides you through each session, lets you log how it
+felt, and tracks your streaks, stats, and achievements. Built with **Expo**
+(React Native), it runs fully on-device and can optionally sign in with
+**Google via AWS Cognito** to sync your history to the cloud.
 
-- Google SSO via AWS Cognito Federated Identity
-- Authorization Code + PKCE flow via `expo-auth-session`
-- Tokens stored securely in device keychain (`expo-secure-store`)
-- Automatic token refresh
-- TypeScript throughout
+<p align="center">
+  <img src="docs/screenshot-dashboard.png" alt="Dashboard" width="24%" />
+  <img src="docs/screenshot-practice.png" alt="Guided practice" width="24%" />
+  <img src="docs/screenshot-report.png" alt="Post-session report" width="24%" />
+  <img src="docs/screenshot-progress.png" alt="Progress & achievements" width="24%" />
+</p>
 
-## OAuth Flow
+<p align="center">
+  <sub>Dashboard &nbsp;·&nbsp; Guided practice &nbsp;·&nbsp; Post-session report &nbsp;·&nbsp; Progress &amp; achievements</sub>
+</p>
+
+## What it does
+
+- **Schedule** — set how many times a day you want to practice and a daily window
+  (first & last time); the app computes evenly-spaced practice times for you.
+- **Reminders** — local notifications fire at each scheduled time, no server required.
+- **Guided practice** — a calm, step-by-step screen walks you through the 6
+  maneuvers (Impulsion → Sensations → Repetition → Rhythm → Circuits → Installation)
+  with a per-step timer.
+- **Post-session report** — optionally log active/blocked chakras, wellbeing,
+  perceptions, and notes right after a session.
+- **Progress & gamification** — daily goal ring, weekly bars, streaks, lifetime
+  stats, and unlockable achievements.
+- **Leaderboard** — opt-in ranking against other practitioners (requires sign-in).
+- **Optional login** — works fully offline; sign in with Google to sync settings,
+  sessions, and stats across devices.
+
+## The 6 maneuvers
+
+The Vibrational State is the deliberate, will-driven dynamization of the
+_energosoma_ (energy body) to keep energetic self-defense active. A single
+session is:
+
+1. **Impulsion** — stand upright, drive energy from head to hands and feet.
+2. **Sensations** — bring the flow back from feet to head; feel its direction.
+3. **Repetition** — repeat ~10 times, sweeping the body's organs.
+4. **Rhythm** — gradually increase the speed of the flow.
+5. **Circuits** — expand the flow into ever-larger circuits inside and outside the body.
+6. **Installation** — install the VS; the whole energetic field becomes "lit".
+
+## Tech stack
+
+| Area          | Choice                                                        |
+| ------------- | ------------------------------------------------------------- |
+| App           | Expo (React Native), `expo-router`, TypeScript                |
+| State / data  | `@tanstack/react-query`, AsyncStorage (on-device persistence) |
+| Notifications | `expo-notifications` (local, scheduled)                       |
+| Auth          | AWS Cognito + Google OAuth 2.0 (PKCE) via `expo-auth-session` |
+| Backend (opt) | AWS CDK — API Gateway + Lambda + DynamoDB                     |
+
+## Monorepo layout
+
+This is an npm-workspaces monorepo. Dependencies are hoisted to the root
+`node_modules`, so always run `npm install` from the repository root.
 
 ```
-User taps "Sign in with Google"
-        ↓
-expo-auth-session opens Cognito Hosted UI in system browser
-        ↓
-Cognito redirects to Google for authentication
-        ↓
-Google returns auth code to Cognito
-        ↓
-Cognito redirects to myapp://callback (deep link)
-        ↓
-OS hands deep link back to the app
-        ↓
-App exchanges code for tokens (ID, Access, Refresh)
-        ↓
-Tokens saved to secure keychain — user is signed in
-```
-
-## Project Structure
-
-```
-aws-cognito/
-├── docs/
-│   ├── architecture.md          # Component diagram + token lifecycle
-│   └── deployment.md            # Full setup: Cognito + Google SSO + EAS Build
-└── mobile/                      # Expo app
-    ├── app/
-    │   ├── _layout.tsx          # Root layout
-    │   └── index.tsx            # Home screen (auth state)
-    ├── src/
-    │   ├── lib/
-    │   │   ├── cognito.ts       # Discovery doc + redirect URI
-    │   │   └── auth.ts          # Token exchange, storage, parsing
-    │   └── components/
-    │       ├── LoginButton.tsx
-    │       └── UserProfile.tsx
-    ├── app.json                 # Expo config (scheme: "myapp")
-    └── .env.example
+aws-cognito-template/
+├── apps/
+│   └── vs-helper/               # The Expo app
+│       ├── app/                 # expo-router screens
+│       │   ├── (tabs)/          #   Home · Progress · Leaderboard · Settings · Account
+│       │   ├── practice.tsx     #   Guided VS session
+│       │   └── report.tsx       #   Post-session report
+│       └── src/
+│           ├── features/vs/     #   schedule, notifications, storage, sync, achievements…
+│           ├── components/      #   UI (ProgressRing, WeekCard, PracticeStep…)
+│           └── features/i18n/   #   translations
+├── packages/
+│   ├── auth/                    # @vs/auth — Cognito/Google SSO (shared)
+│   └── vs-shared/               # @vs/shared — types + stats logic shared with backend
+├── infra/
+│   └── vs-helper-backend/       # AWS CDK: optional cloud-sync + leaderboard API
+└── docs/                        # Architecture, deployment & setup guides
 ```
 
 ## Prerequisites
 
-| Tool                 | Version | Purpose                     |
-| -------------------- | ------- | --------------------------- |
-| Node.js              | ≥ 20    | Runtime                     |
-| Expo CLI             | latest  | `npm i -g expo`             |
-| AWS account          | —       | Cognito User Pool (console) |
-| Google Cloud account | —       | OAuth credentials           |
+| Tool                 | Version | Purpose                                  |
+| -------------------- | ------- | ---------------------------------------- |
+| Node.js              | ≥ 18    | Runtime                                  |
+| Expo Go / Xcode      | latest  | Run on a device or the iOS Simulator     |
+| AWS account          | —       | _Optional_ — Cognito login + cloud sync  |
+| Google Cloud account | —       | _Optional_ — Google OAuth credentials    |
 
-## Quick Start
-
-Follow [`docs/deployment.md`](docs/deployment.md) — a single step-by-step guide
-covering the Cognito User Pool, Google OAuth credentials, the App Client, the
-mobile `.env`, and EAS Build.
+## Quick start
 
 ```bash
-cd mobile
-cp .env.example .env
-# fill in the issuer and App Client ID from the console (OIDC properties)
+# 1. Install dependencies from the repo root (workspaces are hoisted)
 npm install
-npm run ios      # iOS Simulator
-npm run android  # Android Emulator
+
+# 2. Configure the app (login/sync are optional — see notes below)
+cd apps/vs-helper
+cp .env.example .env
+
+# 3. Run it (from the repo root)
+cd ../..
+npm run vs          # start the Expo dev server
+# then press "i" for the iOS Simulator, or scan the QR code with Expo Go
 ```
 
-Tap **Sign in with Google** — the system browser opens, you authenticate, and the app receives the tokens via deep link.
+You can run the app immediately without touching `.env` — it works fully
+on-device. Fill in the OIDC values only when you want Google login and cloud
+sync. See [`docs/vs-helper-ios.md`](docs/vs-helper-ios.md) for the full
+run-it-locally guide.
 
-## Environment Variables
+## Environment variables
 
-All `EXPO_PUBLIC_*` values are inlined into the app bundle at build time. They are **public, not secrets** — the App Client is a public PKCE client with no secret.
+All `EXPO_PUBLIC_*` values are inlined into the app bundle at build time — they
+are **public, not secrets** (the App Client is a public PKCE client with no
+secret). They live in `apps/vs-helper/.env`.
 
 | Variable                          | Description                                                           |
 | --------------------------------- | --------------------------------------------------------------------- |
 | `EXPO_PUBLIC_COGNITO_ISSUER`      | OIDC issuer `https://cognito-idp.<region>.amazonaws.com/<userPoolId>` |
-| `EXPO_PUBLIC_USER_POOL_CLIENT_ID` | Cognito App Client ID (App integration tab)                           |
-| `EXPO_PUBLIC_LOGOUT_URI`          | Optional hosted-UI sign-out URL (e.g. `myapp://`)                     |
-| `EXPO_PUBLIC_APP_SCHEME`          | Must match `app.json → expo.scheme` (`myapp`)                         |
+| `EXPO_PUBLIC_USER_POOL_CLIENT_ID` | Cognito App Client ID (public PKCE client)                            |
+| `EXPO_PUBLIC_LOGOUT_URI`          | Optional hosted-UI sign-out URL (e.g. `vshelper://`)                  |
+| `EXPO_PUBLIC_APP_SCHEME`          | Must match `app.json → expo.scheme` (`vshelper`)                      |
+| `EXPO_PUBLIC_API_BASE_URL`        | Optional cloud-sync backend URL — leave unset to run fully on-device  |
 
 ## Documentation
 
-- [Architecture](docs/architecture.md)
-- [Setup & Deployment](docs/deployment.md)
-- [Vibrational State (VS) Helper — Architecture](docs/vs-helper-architecture.md)
+- [Product & feature architecture](docs/vs-helper-architecture.md)
+- [Run on iOS (Simulator / device)](docs/vs-helper-ios.md)
+- [Cloud-sync backend (AWS CDK)](docs/vs-helper-backend.md)
+- [Auth architecture](docs/architecture.md)
+- [Cognito + Google SSO setup & deployment](docs/deployment.md)
 
 ## License
 

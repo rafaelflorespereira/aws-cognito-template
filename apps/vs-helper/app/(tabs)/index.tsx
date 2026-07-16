@@ -168,6 +168,7 @@ export default function Dashboard() {
   const greeting = firstName
     ? t(`home.greeting.${period}.named` as TranslationKey, { name: firstName })
     : t(`home.greeting.${period}` as TranslationKey);
+  const tagline = t(`home.tagline.${period}` as TranslationKey);
 
   return (
     <ScrollView
@@ -179,8 +180,8 @@ export default function Dashboard() {
     >
       <View style={styles.header}>
         <Text style={styles.greeting}>{greeting}</Text>
-        <Text style={styles.title}>{t("home.today")}</Text>
         <Text style={styles.date}>{dateLabel}</Text>
+        <Text style={styles.tagline}>{tagline}</Text>
       </View>
 
       <View {...weekPanResponder.panHandlers}>
@@ -236,23 +237,24 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   header: {
-    gap: 2,
+    gap: 4,
   },
   greeting: {
     fontSize: 15,
     fontWeight: "600",
     color: "#6366f1",
   },
-  title: {
-    fontSize: 34,
-    fontWeight: "800",
-    color: "#0f172a",
-    letterSpacing: -0.5,
-  },
   date: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#0f172a",
+    letterSpacing: -0.4,
+    textTransform: "capitalize",
+  },
+  tagline: {
     fontSize: 15,
     color: "#64748b",
-    textTransform: "capitalize",
+    lineHeight: 20,
   },
   timelineWrap: {
     marginTop: 4,

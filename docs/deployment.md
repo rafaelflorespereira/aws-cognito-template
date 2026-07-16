@@ -103,7 +103,7 @@ App integration → App clients:
 ## 11. Configure the mobile app
 
 Copy these from the pool's **"Add the example code to your application"** page
-(OIDC properties) into `mobile/.env`:
+(OIDC properties) into `apps/vs-helper/.env`:
 
 | Console value (OIDC properties) | `.env` variable                   |
 | ------------------------------- | --------------------------------- |

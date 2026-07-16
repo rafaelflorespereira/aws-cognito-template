@@ -5,8 +5,7 @@
 > is already in place (see [`architecture.md`](architecture.md)); this document
 > covers the VS-specific product.
 >
-> **Scoping:** the VS helper is its **own app** (`apps/vs-helper`). The existing
-> `mobile/` auth template stays **untouched** as a reference; its auth logic is
+> **Scoping:** the VS helper is its **own app** (`apps/vs-helper`). Its auth logic is
 > extracted into a shared workspace package (`packages/auth`, `@vs/auth`) that the
 > VS app consumes. See [§7 Monorepo Structure](#7-monorepo-structure).
 >
@@ -371,13 +370,11 @@ export function useSchedule(): {
 ## 7. Monorepo Structure
 
 The repo is a **workspace** (npm/pnpm workspaces). Auth is extracted into a shared
-package; the VS helper is a separate app. `mobile/` stays as the original,
-self-contained auth reference template and is **not** modified by the VS work.
+package; the VS helper is a separate app.
 
 ```
 aws-cognito-template/            # workspace root
-├── package.json                 # workspaces: ["mobile", "packages/*", "apps/*"]
-├── mobile/                      # existing auth template (reference — untouched)
+├── package.json                 # workspaces: ["packages/*", "apps/*", "infra/*"]
 ├── packages/
 │   └── auth/                    # shared Cognito + Google SSO library (@vs/auth)
 │       ├── package.json         # name: "@vs/auth"
@@ -423,8 +420,6 @@ aws-cognito-template/            # workspace root
   (`getStoredTokens`, `exchangeCodeForTokens`, `LoginButton`, `UserProfile`, …).
 - `apps/vs-helper` owns all VS logic and imports auth **only** through `@vs/auth`;
   it never reaches into auth internals.
-- `mobile/` remains a standalone template — safe to keep as the canonical auth
-  example, or later retire once `packages/auth` is the single source of truth.
 
 ## 8. New Dependencies
 
@@ -445,7 +440,7 @@ workspace package the VS app depends on (no publishing required).
   reports with the user, so they can be counted toward history/streaks and, in
   Phase 2, synced across devices (keyed by the Cognito identity — email/name/picture
   from the ID token).
-- Auth ships as the shared **`@vs/auth`** package (extracted from `mobile/`). The VS
+- Auth ships as the shared **`@vs/auth`** package. The VS
   app imports its public API (e.g. `getStoredTokens`, `LoginButton`) — the Cognito +
   Google SSO flow itself is reused **unchanged** and simply no longer gates access.
   A non-intrusive “Sign in to save your progress” prompt surfaces on the dashboard
@@ -486,8 +481,8 @@ logs it before `promptAsync()` so you can register the exact string.
 - `WebBrowser.maybeCompleteAuthSession()` (in `_layout.tsx`) dismisses the Custom
   Tab after the redirect.
 - Add `vshelper://` to the App Client **sign-out URLs** (mirrors `myapp://`).
-- Cognito's Google identity provider keeps using the **Web** Google OAuth client
-  already configured for `mobile/` — no separate Android OAuth client is needed.
+- Cognito's Google identity provider keeps using the existing **Web** Google OAuth
+  client — no separate Android OAuth client is needed.
 
 ## 10. Phased Roadmap
 

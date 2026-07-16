@@ -7,7 +7,7 @@
 │                      Device                                  │
 │                                                              │
 │  ┌────────────────────────────────────────────────────────┐  │
-│  │              Expo App (mobile/)                        │  │
+│  │              Expo App (apps/vs-helper/)                │  │
 │  │                                                        │  │
 │  │  expo-auth-session                                     │  │
 │  │   - builds authorization URL + PKCE code challenge     │  │
