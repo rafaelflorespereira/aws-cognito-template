@@ -1,20 +1,24 @@
-# VS Helper — Cloud Sync Backend (Phase 2 + Phase 3 leaderboard)
+# VS Helper — Cloud Sync Backend (Phase 2 + Phase 3 leaderboard + groups)
 
 Deployment guide for the sync API described in
 [`vs-helper-architecture.md`](vs-helper-architecture.md) §12. Lives at
 `infra/vs-helper-backend` as an AWS CDK (TypeScript) app.
 
 **Scope**: Settings, Sessions and Stats sync (Phase 2), plus the opt-in
-**leaderboard** (Phase 3, §11). Reports stay on-device (sensitive/opt-in);
-situational reminders and group mode are not built.
+**leaderboard** and **championship groups** (Phase 3, §11/§11a). Reports and
+achievement unlocks stay on-device (sensitive/opt-in); situational reminders
+are not built.
 
 ## What it deploys
 
-- **DynamoDB** — `SettingsTable`, `SessionsTable`, `StatsTable`, `UsersTable`
-  (all pay-per-request, partitioned by `userId` = the Cognito `sub`). Tables
-  are created with `RemovalPolicy.RETAIN`, so `cdk destroy` never deletes user
-  data. `StatsTable` has a `gsi1` GSI (`gsi1pk`/`gsi1sk`) that only opted-in
-  users are indexed on — that's the leaderboard.
+- **DynamoDB** — `SettingsTable`, `SessionsTable`, `StatsTable`, `UsersTable`,
+  `GroupsTable`, `GroupMembersTable` (all pay-per-request, partitioned by
+  `userId` = the Cognito `sub`, except `Groups*` which partition by
+  `groupId`). Tables are created with `RemovalPolicy.RETAIN`, so
+  `cdk destroy` never deletes user data. `StatsTable` has a `gsi1` GSI
+  (`gsi1pk`/`gsi1sk`) that only opted-in users are indexed on — that's the
+  global leaderboard. `GroupMembersTable` has a `byUser` GSI for listing a
+  user's groups.
 - **Lambda** (Node 20, arm64) — one function per route, bundled with esbuild
   (no Docker required).
 - **API Gateway HTTP API** — routes below, protected by a JWT authorizer that
@@ -23,16 +27,21 @@ situational reminders and group mode are not built.
   authorizer or new Cognito resources are created — this reuses the pool from
   [`deployment.md`](deployment.md).
 
-| Method | Path          | Purpose                                                |
-| ------ | ------------- | ------------------------------------------------------- |
-| GET    | `/settings`   | Fetch the caller's synced `VSSettings` (404 if none)   |
-| PUT    | `/settings`   | Upsert settings; last-write-wins via `updatedAt`       |
-| GET    | `/sessions`   | Fetch the caller's full `SessionRecord[]` history      |
-| POST   | `/sessions`   | Append one `SessionRecord`; recomputes `Stats`         |
-| GET    | `/stats`      | Fetch the caller's `LifetimeStats` (zeroed if none)    |
-| GET    | `/profile`    | Fetch the caller's handle + leaderboard opt-in         |
-| PUT    | `/profile`    | Upsert handle + opt-in; keeps `Stats`' GSI fields in sync |
-| GET    | `/leaderboard`| Top 50 opted-in users by `totalSessions`, descending   |
+| Method | Path                          | Purpose                                                |
+| ------ | ----------------------------- | ------------------------------------------------------- |
+| GET    | `/settings`                   | Fetch the caller's synced `VSSettings` (404 if none)   |
+| PUT    | `/settings`                   | Upsert settings; last-write-wins via `updatedAt`       |
+| GET    | `/sessions`                   | Fetch the caller's full `SessionRecord[]` history      |
+| POST   | `/sessions`                   | Append one `SessionRecord`; recomputes `Stats`         |
+| GET    | `/stats`                      | Fetch the caller's `LifetimeStats` (zeroed if none)    |
+| GET    | `/profile`                    | Fetch the caller's handle + leaderboard opt-in         |
+| PUT    | `/profile`                    | Upsert handle + opt-in; keeps `Stats`' GSI fields in sync |
+| GET    | `/leaderboard`                | Top 50 opted-in users by `totalSessions`, descending   |
+| POST   | `/groups`                     | Create a group (auto-joins the caller); requires a handle |
+| GET    | `/groups`                     | List the caller's groups                               |
+| POST   | `/groups/{groupId}/join`      | Join a group by its invite code; requires a handle     |
+| POST   | `/groups/{groupId}/leave`     | Leave a group                                           |
+| GET    | `/groups/{groupId}/leaderboard` | Members ranked by `totalSessions` (caller must be a member) |
 
 `POST /sessions` is idempotent on `completedAt` (a conditional put rejects
 duplicates from client retries) and recomputes `LifetimeStats` from the full
@@ -118,4 +127,6 @@ curl -i https://<api-id>.execute-api.<region>.amazonaws.com/stats \
 ## Not done yet
 
 - **Reports & UserAchievements sync** — deferred; still on-device only.
-- **Situational reminders & group mode** (rest of Phase 3, §10) — not started.
+- **Situational reminders** (rest of Phase 3, §10) — not started.
+- **Group admin actions** — no kicking members or deleting a group; the
+  owner leaving a group just removes their own membership like anyone else.

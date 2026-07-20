@@ -64,11 +64,35 @@ export class VsHelperBackendStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    // Private, invite-code championship groups. `groupId` is the join code
+    // itself (see src/lib/groups.ts generateGroupId).
+    const groupsTable = new dynamodb.Table(this, "GroupsTable", {
+      partitionKey: { name: "groupId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
+    // Membership rows; `byUser` answers "which groups is this user in".
+    const groupMembersTable = new dynamodb.Table(this, "GroupMembersTable", {
+      partitionKey: { name: "groupId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "userId", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+    groupMembersTable.addGlobalSecondaryIndex({
+      indexName: "byUser",
+      partitionKey: { name: "userId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "groupId", type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
+    });
+
     const commonEnv = {
       SETTINGS_TABLE_NAME: settingsTable.tableName,
       SESSIONS_TABLE_NAME: sessionsTable.tableName,
       STATS_TABLE_NAME: statsTable.tableName,
       USERS_TABLE_NAME: usersTable.tableName,
+      GROUPS_TABLE_NAME: groupsTable.tableName,
+      GROUP_MEMBERS_TABLE_NAME: groupMembersTable.tableName,
     };
 
     const commonProps: Partial<lambdaNode.NodejsFunctionProps> = {
@@ -95,6 +119,11 @@ export class VsHelperBackendStack extends cdk.Stack {
     const getProfileFn = fn("GetProfileFn");
     const putProfileFn = fn("PutProfileFn");
     const getLeaderboardFn = fn("GetLeaderboardFn");
+    const createGroupFn = fn("CreateGroupFn");
+    const joinGroupFn = fn("JoinGroupFn");
+    const leaveGroupFn = fn("LeaveGroupFn");
+    const getGroupsFn = fn("GetGroupsFn");
+    const getGroupLeaderboardFn = fn("GetGroupLeaderboardFn");
 
     settingsTable.grantReadData(getSettingsFn);
     settingsTable.grantReadWriteData(putSettingsFn);
@@ -108,6 +137,21 @@ export class VsHelperBackendStack extends cdk.Stack {
     usersTable.grantReadWriteData(putProfileFn);
     statsTable.grantReadWriteData(putProfileFn); // keeps Stats' denormalized handle/gsi fields in sync
     statsTable.grantReadData(getLeaderboardFn);
+
+    usersTable.grantReadData(createGroupFn); // requires the caller already has a handle
+    groupsTable.grantReadWriteData(createGroupFn);
+    groupMembersTable.grantReadWriteData(createGroupFn); // auto-joins the creator
+
+    usersTable.grantReadData(joinGroupFn);
+    groupsTable.grantReadData(joinGroupFn);
+    groupMembersTable.grantReadWriteData(joinGroupFn);
+
+    groupMembersTable.grantReadWriteData(leaveGroupFn);
+
+    groupMembersTable.grantReadData(getGroupsFn);
+
+    groupMembersTable.grantReadData(getGroupLeaderboardFn);
+    statsTable.grantReadData(getGroupLeaderboardFn);
 
     // The RN app already holds a Cognito ID token (packages/auth); this
     // authorizer verifies it directly — no separate Lambda authorizer needed.
@@ -177,6 +221,39 @@ export class VsHelperBackendStack extends cdk.Stack {
       integration: new HttpLambdaIntegration(
         "GetLeaderboardInt",
         getLeaderboardFn,
+      ),
+      authorizer,
+    });
+    httpApi.addRoutes({
+      path: "/groups",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new HttpLambdaIntegration("CreateGroupInt", createGroupFn),
+      authorizer,
+    });
+    httpApi.addRoutes({
+      path: "/groups",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new HttpLambdaIntegration("GetGroupsInt", getGroupsFn),
+      authorizer,
+    });
+    httpApi.addRoutes({
+      path: "/groups/{groupId}/join",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new HttpLambdaIntegration("JoinGroupInt", joinGroupFn),
+      authorizer,
+    });
+    httpApi.addRoutes({
+      path: "/groups/{groupId}/leave",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new HttpLambdaIntegration("LeaveGroupInt", leaveGroupFn),
+      authorizer,
+    });
+    httpApi.addRoutes({
+      path: "/groups/{groupId}/leaderboard",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new HttpLambdaIntegration(
+        "GetGroupLeaderboardInt",
+        getGroupLeaderboardFn,
       ),
       authorizer,
     });

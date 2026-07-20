@@ -57,6 +57,8 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="practice" />
             <Stack.Screen name="report" />
+            <Stack.Screen name="group/new" />
+            <Stack.Screen name="group/[groupId]" />
           </Stack>
         </I18nProvider>
       </SafeAreaProvider>

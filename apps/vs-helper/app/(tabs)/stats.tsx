@@ -2,20 +2,33 @@ import { useCallback, useState } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import type { LifetimeStats, Achievement } from "@/features/vs/types";
+import type {
+  LifetimeStats,
+  Achievement,
+  AchievementCategory,
+} from "@/features/vs/types";
 import {
   loadHistory,
   loadSettings,
   loadTodayProgress,
+  loadAchievements,
+  saveAchievements,
 } from "@/features/vs/storage";
 import { computeStats } from "@vs/shared";
 import { currentSpacingMin } from "@/features/vs/schedule";
-import { ACHIEVEMENTS, evaluateAchievements } from "@/features/vs/achievements";
-import { useI18n } from "@/features/i18n";
+import {
+  ACHIEVEMENTS,
+  evaluateAchievements,
+  newlyUnlocked,
+} from "@/features/vs/achievements";
+import { useI18n, type TranslationKey } from "@/features/i18n";
 import { syncSessionHistoryNow } from "@/features/vs/sync";
 import ProgressRing from "@/components/ProgressRing";
 import StatCard from "@/components/StatCard";
 import AchievementBadge from "@/components/AchievementBadge";
+import AchievementCelebration from "@/components/AchievementCelebration";
+
+const CATEGORIES: AchievementCategory[] = ["practice", "streak", "consistency"];
 
 const EMPTY_STATS: LifetimeStats = {
   totalSessions: 0,
@@ -30,6 +43,7 @@ export default function Stats() {
   const insets = useSafeAreaInsets();
   const [stats, setStats] = useState<LifetimeStats>(EMPTY_STATS);
   const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
+  const [celebrating, setCelebrating] = useState<Achievement[]>([]);
   const [todayDone, setTodayDone] = useState(0);
   const [goal, setGoal] = useState(20);
   const [spacingMin, setSpacingMin] = useState(0);
@@ -38,14 +52,23 @@ export default function Stats() {
     useCallback(() => {
       (async () => {
         await syncSessionHistoryNow();
-        const [history, settings, progress] = await Promise.all([
-          loadHistory(),
-          loadSettings(),
-          loadTodayProgress(),
-        ]);
+        const [history, settings, progress, persistedAchievements] =
+          await Promise.all([
+            loadHistory(),
+            loadSettings(),
+            loadTodayProgress(),
+            loadAchievements(),
+          ]);
         const s = computeStats(history, settings.timesPerDay);
         setStats(s);
-        setAchievements(evaluateAchievements(s, ACHIEVEMENTS));
+        const evaluated = evaluateAchievements(
+          s,
+          persistedAchievements.length ? persistedAchievements : ACHIEVEMENTS,
+        );
+        setAchievements(evaluated);
+        const justUnlocked = newlyUnlocked(persistedAchievements, evaluated);
+        if (justUnlocked.length) setCelebrating(justUnlocked);
+        await saveAchievements(evaluated);
         setTodayDone(progress.completed);
         setGoal(settings.timesPerDay);
         setSpacingMin(
@@ -100,11 +123,27 @@ export default function Stats() {
       </View>
 
       <Text style={styles.subtitle}>{t("stats.achievements")}</Text>
-      <View style={styles.badges}>
-        {achievements.map((a) => (
-          <AchievementBadge key={a.id} item={a} />
-        ))}
-      </View>
+      {CATEGORIES.map((category) => {
+        const items = achievements.filter((a) => a.category === category);
+        if (!items.length) return null;
+        return (
+          <View key={category} style={styles.categorySection}>
+            <Text style={styles.categoryTitle}>
+              {t(`achievements.category.${category}` as TranslationKey)}
+            </Text>
+            <View style={styles.badges}>
+              {items.map((a) => (
+                <AchievementBadge key={a.id} item={a} />
+              ))}
+            </View>
+          </View>
+        );
+      })}
+
+      <AchievementCelebration
+        achievements={celebrating}
+        onDismiss={() => setCelebrating([])}
+      />
     </ScrollView>
   );
 }
@@ -133,4 +172,12 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   badges: { width: "100%", gap: 10 },
+  categorySection: { width: "100%", gap: 8 },
+  categoryTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#94a3b8",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
 });

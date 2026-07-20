@@ -8,6 +8,7 @@ export interface VSSettings {
   sessionDurationSec: number; // length of one VS session; default 120 (2 min)
   notificationsEnabled: boolean;
   showGuidedSteps: boolean;
+  audioGuideEnabled: boolean; // speak each maneuver aloud during practice
   configured: boolean; // false until the user completes first-run onboarding
 }
 
@@ -41,4 +42,13 @@ export interface LeaderboardEntry {
   currentStreak: number;
   bestStreak: number;
   isYou: boolean;
+}
+
+// A private, invite-code championship group. `groupId` doubles as the
+// shareable join code. Group leaderboard entries reuse LeaderboardEntry —
+// same shape (rank/handle/coarse counts), just scoped to group members
+// instead of the global opt-in board.
+export interface Group {
+  groupId: string;
+  name: string;
 }

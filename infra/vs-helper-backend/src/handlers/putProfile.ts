@@ -5,10 +5,7 @@ import { ddb, TABLES } from "../lib/ddb";
 import { requireUserId } from "../lib/auth";
 import { json } from "../lib/http";
 import { buildStatsItem } from "../lib/leaderboard";
-
-// Public leaderboard names only — keep them short and free of anything that
-// could carry an email/real name accidentally pasted in.
-const HANDLE_RE = /^[A-Za-z0-9_]{3,20}$/;
+import { HANDLE_RE } from "../lib/handle";
 
 const ZERO_STATS: LifetimeStats = {
   totalSessions: 0,

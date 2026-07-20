@@ -56,6 +56,7 @@ export default function Settings() {
   const [durationSec, setDurationSec] = useState(0);
   const [notifications, setNotifications] = useState(true);
   const [guided, setGuided] = useState(true);
+  const [audioGuide, setAudioGuide] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -67,6 +68,7 @@ export default function Settings() {
     setDurationSec(settings.sessionDurationSec % 60);
     setNotifications(settings.notificationsEnabled);
     setGuided(settings.showGuidedSteps);
+    setAudioGuide(settings.audioGuideEnabled);
     setHydrated(true);
   }, [loading, hydrated, settings]);
 
@@ -78,6 +80,7 @@ export default function Settings() {
       sessionDurationSec: Math.max(15, durationMin * 60 + durationSec),
       notificationsEnabled: notifications,
       showGuidedSteps: guided,
+      audioGuideEnabled: audioGuide,
       configured: true,
     });
     router.replace("/");
@@ -193,6 +196,11 @@ export default function Settings() {
       <View style={styles.switchRow}>
         <Text style={styles.switchLabel}>{t("settings.guidedSteps")}</Text>
         <Switch value={guided} onValueChange={setGuided} />
+      </View>
+
+      <View style={styles.switchRow}>
+        <Text style={styles.switchLabel}>{t("settings.audioGuide")}</Text>
+        <Switch value={audioGuide} onValueChange={setAudioGuide} />
       </View>
 
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>

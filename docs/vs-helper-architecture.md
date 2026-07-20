@@ -153,14 +153,15 @@ A simple, focused screen to run one VS session.
   when the timer reaches zero (or the user can finish early).
 - On finish → mark the current slot complete, update progress, then navigate to the
   **report** screen (which can be skipped for on-the-run practice).
-
-**Next step — audio guide**: today's guided steps are text-only (phrases
-crossfading over the illustration, per §4.2 above). Add an optional spoken
-audio guide that narrates each of the 6 maneuvers in sync with the step
-timer, so the practice can run eyes-closed. Should respect the same
-`showGuidedSteps` toggle (or a new dedicated one), ship per-language voice
-lines matching the existing `maneuver.*` translation keys, and mute cleanly
-when the device is on silent/DND.
+- **Audio guide** (shipped): an opt-in `audioGuideEnabled` setting, independent
+  of `showGuidedSteps`, speaks each maneuver's full instruction once per step
+  via on-device text-to-speech (`expo-speech`, `src/features/vs/speech.ts`),
+  in the current UI language (all 5 supported languages, no new content
+  needed — it reads the existing `maneuver.*.text` strings). Speech stops
+  immediately on finish, cancel, or leaving the screen. Known limitation:
+  iOS `AVSpeechSynthesizer` doesn't reliably respect the hardware silent
+  switch — the toggle being off-by-default is the mitigation, not an audio
+  session workaround.
 
 ### 4.3 Report screen (`report.tsx`)
 
@@ -196,10 +197,17 @@ The gamification hub — turns consistent practice into visible progress.
 - **Streak**: current and best run of consecutive days that met the daily goal.
 - **Statistics**: lifetime total VS, days active, daily average, most-active and
   most-blocked chakra, and a simple wellbeing trend (from saved reports).
-- **Achievements**: milestone badges (e.g. first VS, 100 done, 7-day streak) shown
-  locked/unlocked; new unlocks are evaluated after each completed session.
+- **Achievements** (revamped): 17 tiered badges (bronze/silver/gold/platinum)
+  across three categories — practice count (1 to 1000 sessions), streak
+  (3 to 60 days) and consistency (7 to 365 active days) — see
+  `src/features/vs/achievements.ts`. Unlock state is persisted on-device
+  (`storage.ts` `loadAchievements`/`saveAchievements`) so `unlockedAt` is a
+  real, stable date instead of being recomputed on every screen open; newly
+  cleared badges trigger a one-time celebration modal
+  (`AchievementCelebration.tsx`) via a diff against the previous state.
 - All computed **on-device** from the local session history; signing in later lets
-  these feed the future leaderboard (see §12).
+  these feed the leaderboard (see §11/§12). Achievement unlocks themselves are
+  not synced — still on-device only, see §12.
 
 ## 5. Core Domain Logic
 
@@ -238,6 +246,7 @@ export interface VSSettings {
   sessionDurationSec: number; // length of one VS session; default 120 (2 min)
   notificationsEnabled: boolean;
   showGuidedSteps: boolean;
+  audioGuideEnabled: boolean; // speak each maneuver aloud during practice (§4.2)
   configured: boolean; // false until the user completes first-run onboarding
 }
 
@@ -284,11 +293,13 @@ export interface LifetimeStats {
 }
 
 export interface Achievement {
-  id: string; // "first-vs", "century", "streak-7", ...
-  title: string;
-  description: string;
+  id: string; // "practice-1", "streak-7", "days-30", ...
+  tier: "bronze" | "silver" | "gold" | "platinum";
+  category: "practice" | "streak" | "consistency";
   unlockedAt: string | null; // ISO when unlocked; null while locked
 }
+// Title/description are translated at render time via i18n keys
+// `achievement.<id>.title` / `.desc` — see src/features/vs/achievements.ts.
 ```
 
 ### 5.3 Storage
@@ -490,7 +501,7 @@ logs it before `promptAsync()` so you can register the exact string.
 | ----- | --------------------------------------------------------------------------------- | ------ |
 | 1     | On-device MVP: settings, schedule, notifications, practice, report, gamification | Done |
 | 2     | Cloud sync of settings/sessions/stats (Cognito identity + API); richer statistics | Settings + Sessions + Stats sync shipped — see [`vs-helper-backend.md`](vs-helper-backend.md). Reports/achievements sync and richer statistics still open |
-| 3     | Global **leaderboard**; situational reminders (the 20 situations); group mode; **audio guide** for the practice screen (§4.2) | Leaderboard shipped — see [`vs-helper-backend.md`](vs-helper-backend.md). Situational reminders, group mode, and the practice audio guide not started |
+| 3     | Global **leaderboard**; situational reminders (the 20 situations); **championship groups**; **audio guide** for the practice screen (§4.2) | Leaderboard, championship groups, and the audio guide all shipped — see [`vs-helper-backend.md`](vs-helper-backend.md) and §11a below. Situational reminders not started |
 
 ## 11. Leaderboard (scores window)
 
@@ -515,6 +526,35 @@ tab); the ranking key is `totalSessions`.
 - **Screen**: `app/(tabs)/leaderboard.tsx` — top 50 ranks with an `isYou`
   highlight on the current user's row; no separate "your position" query yet
   if they're ranked below 50th.
+
+## 11a. Championship groups
+
+**Shipped** — private, invite-code groups with their own leaderboard, scoped
+to group membership rather than the global opt-in board. Deliberately
+independent of `leaderboardOptIn`: joining a group via its code is itself the
+opt-in for that group's board.
+
+- **Model**: `Groups` (`PK: groupId`, the 6-character invite code itself —
+  see `generateGroupId` in `infra/vs-helper-backend/src/lib/groups.ts`) and
+  `GroupMembers` (`PK: groupId`, `SK: userId`, with a `byUser` GSI for
+  "list my groups"). Membership is capped at `MAX_GROUP_MEMBERS` (50) so a
+  group's leaderboard read is always one `Query` + one `BatchGetItem` against
+  `Stats` — no pagination needed at that scale.
+- **Routes**: `POST /groups` (create + auto-join), `GET /groups` (mine),
+  `POST /groups/{groupId}/join`, `POST /groups/{groupId}/leave`,
+  `GET /groups/{groupId}/leaderboard` — same JWT-authorized HTTP API as
+  everything else in `infra/vs-helper-backend`.
+- **Requires a handle**: creating or joining a group requires the caller to
+  already have a public `handle` set (same field/validation as the global
+  leaderboard, `PUT /profile`), since group boards display it.
+- **No admin actions yet**: no kicking members or deleting a group in this
+  pass — the owner leaving just removes their own membership like anyone
+  else, and the group persists.
+- **Screens**: `app/(tabs)/leaderboard.tsx` gained a Global/My Groups
+  segmented header; `app/group/new.tsx` (create or join) and
+  `app/group/[groupId].tsx` (a group's leaderboard + leave action) are
+  pushed routes, reusing `LeaderboardHeader`/`LeaderboardRow` since group
+  entries share the exact `LeaderboardEntry` shape.
 
 ## 12. Data & Database (cloud sync)
 

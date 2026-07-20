@@ -4,6 +4,7 @@ import type {
   DailyProgress,
   SessionReport,
   SessionRecord,
+  Achievement,
 } from "./types";
 
 const KEYS = {
@@ -12,6 +13,7 @@ const KEYS = {
   progress: "vs.progress",
   reports: "vs.reports",
   history: "vs.history",
+  achievements: "vs.achievements",
 };
 
 export const DEFAULT_SETTINGS: VSSettings = {
@@ -21,6 +23,7 @@ export const DEFAULT_SETTINGS: VSSettings = {
   sessionDurationSec: 120,
   notificationsEnabled: true,
   showGuidedSteps: true,
+  audioGuideEnabled: false,
   configured: false,
 };
 
@@ -139,4 +142,15 @@ export function buildTodayProgressFromHistory(
 
 export async function saveTodayProgress(progress: DailyProgress): Promise<void> {
   await AsyncStorage.setItem(KEYS.progress, JSON.stringify(progress));
+}
+
+// Real unlock state (so unlockedAt reflects when a badge actually cleared,
+// not the last time the stats screen happened to be opened) — see
+// evaluateAchievements in achievements.ts.
+export async function loadAchievements(): Promise<Achievement[]> {
+  return readJSON<Achievement[]>(KEYS.achievements, []);
+}
+
+export async function saveAchievements(achievements: Achievement[]): Promise<void> {
+  await AsyncStorage.setItem(KEYS.achievements, JSON.stringify(achievements));
 }

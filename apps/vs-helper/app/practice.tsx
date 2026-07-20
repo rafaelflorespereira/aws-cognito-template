@@ -10,6 +10,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSchedule } from "@/features/vs/useSchedule";
 import { MANEUVERS } from "@/features/vs/content";
+import { speakManeuver, stopSpeaking } from "@/features/vs/speech";
 import { useI18n, type TranslationKey } from "@/features/i18n";
 import PracticeBackground from "@/components/PracticeBackground";
 import EnergyBodyIllustration from "@/components/EnergyBodyIllustration";
@@ -107,6 +108,7 @@ export default function Practice() {
     if (finishing) return;
     setFinishing(true);
     setRunning(false);
+    stopSpeaking();
     try {
       const slot = await completeCurrent({
         completedAt: startedAtRef.current ?? undefined,
@@ -164,6 +166,20 @@ export default function Practice() {
       useNativeDriver: true,
     }).start();
   }, [fadeKey, fade]);
+
+  // Speaks the current maneuver's full instruction once per step (not the
+  // on-screen split phrases, which are a visual-only chunking device and
+  // would sound broken up if read piecemeal).
+  useEffect(() => {
+    if (!running || !settings.audioGuideEnabled) {
+      stopSpeaking();
+      return;
+    }
+    speakManeuver(t(`maneuver.${current.n}.text` as TranslationKey), lang);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStep, running, settings.audioGuideEnabled, lang]);
+
+  useEffect(() => stopSpeaking, []);
 
   const guided = settings.showGuidedSteps;
 
@@ -240,7 +256,13 @@ export default function Practice() {
             <TouchableOpacity onPress={finish} hitSlop={12}>
               <Text style={styles.finish}>{t("practice.finishShort")}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
+            <TouchableOpacity
+              onPress={() => {
+                stopSpeaking();
+                router.back();
+              }}
+              hitSlop={12}
+            >
               <Text style={styles.cancel}>{t("practice.cancel")}</Text>
             </TouchableOpacity>
           </>

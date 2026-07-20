@@ -9,4 +9,6 @@ export const TABLES = {
   sessions: process.env.SESSIONS_TABLE_NAME!,
   stats: process.env.STATS_TABLE_NAME!,
   users: process.env.USERS_TABLE_NAME!,
+  groups: process.env.GROUPS_TABLE_NAME!,
+  groupMembers: process.env.GROUP_MEMBERS_TABLE_NAME!,
 };

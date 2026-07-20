@@ -30,7 +30,12 @@ export interface SessionReport {
   notes?: string; // optional free text
 }
 
+export type AchievementTier = "bronze" | "silver" | "gold" | "platinum";
+export type AchievementCategory = "practice" | "streak" | "consistency";
+
 export interface Achievement {
   id: string; // "first-vs", "century", "streak-7", ...
+  tier: AchievementTier;
+  category: AchievementCategory;
   unlockedAt: string | null; // ISO when unlocked; null while locked
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getStoredTokens, refreshAccessToken } from "@vs/auth";
 import type {
+  Group,
   LeaderboardEntry,
   LifetimeStats,
   SessionRecord,
@@ -284,6 +285,52 @@ export async function fetchLeaderboardResult(): Promise<
     req.data,
     "GET",
     "/leaderboard",
+  );
+  if (parsed.error) return { data: null, error: parsed.error };
+  return { data: parsed.data?.entries ?? [], error: null };
+}
+
+export async function createGroupResult(name: string): Promise<SyncResult<Group>> {
+  const req = await authedRequest("/groups", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+  if (req.error) return { data: null, error: req.error };
+  return parseJson<Group>(req.data, "POST", "/groups");
+}
+
+export async function fetchGroupsResult(): Promise<SyncResult<Group[]>> {
+  const req = await authedRequest("/groups");
+  if (req.error) return { data: null, error: req.error };
+  const parsed = await parseJson<{ groups?: Group[] }>(req.data, "GET", "/groups");
+  if (parsed.error) return { data: null, error: parsed.error };
+  return { data: parsed.data?.groups ?? [], error: null };
+}
+
+export async function joinGroupResult(groupId: string): Promise<SyncResult<Group>> {
+  const path = `/groups/${encodeURIComponent(groupId)}/join`;
+  const req = await authedRequest(path, { method: "POST" });
+  if (req.error) return { data: null, error: req.error };
+  return parseJson<Group>(req.data, "POST", path);
+}
+
+export async function leaveGroupResult(groupId: string): Promise<SyncResult<{ groupId: string }>> {
+  const path = `/groups/${encodeURIComponent(groupId)}/leave`;
+  const req = await authedRequest(path, { method: "POST" });
+  if (req.error) return { data: null, error: req.error };
+  return parseJson<{ groupId: string }>(req.data, "POST", path);
+}
+
+export async function fetchGroupLeaderboardResult(
+  groupId: string,
+): Promise<SyncResult<LeaderboardEntry[]>> {
+  const path = `/groups/${encodeURIComponent(groupId)}/leaderboard`;
+  const req = await authedRequest(path);
+  if (req.error) return { data: null, error: req.error };
+  const parsed = await parseJson<{ entries?: LeaderboardEntry[] }>(
+    req.data,
+    "GET",
+    path,
   );
   if (parsed.error) return { data: null, error: parsed.error };
   return { data: parsed.data?.entries ?? [], error: null };

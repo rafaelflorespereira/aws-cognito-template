@@ -48,6 +48,7 @@ function parseBody(body: string | undefined): SyncedSettings {
   const requiredBooleans = [
     "notificationsEnabled",
     "showGuidedSteps",
+    "audioGuideEnabled",
     "configured",
   ] as const;
 
@@ -74,6 +75,7 @@ function parseBody(body: string | undefined): SyncedSettings {
     sessionDurationSec: parsed.sessionDurationSec,
     notificationsEnabled: parsed.notificationsEnabled,
     showGuidedSteps: parsed.showGuidedSteps,
+    audioGuideEnabled: parsed.audioGuideEnabled,
     configured: parsed.configured,
     updatedAt: parsed.updatedAt,
   };
