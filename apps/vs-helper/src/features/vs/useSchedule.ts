@@ -36,6 +36,7 @@ export interface UseSchedule {
   settings: VSSettings;
   configured: boolean; // drives the first-run redirect in _layout
   loading: boolean;
+  now: Date;
   slots: string[];
   next: string | null;
   nextDue: Date | null; // adaptive recommended time for the next session
@@ -187,6 +188,7 @@ export function useSchedule(): UseSchedule {
     settings,
     configured: settings.configured,
     loading,
+    now,
     slots,
     next,
     nextDue,

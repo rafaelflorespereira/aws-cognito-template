@@ -361,7 +361,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 4,
   },
-  switchLabel: { fontSize: 15, color: "#334155" },
+  switchLabel: {
+    flex: 1,
+    paddingRight: 12,
+    fontSize: 15,
+    color: "#334155",
+  },
   langRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   langChip: {
     paddingVertical: 8,

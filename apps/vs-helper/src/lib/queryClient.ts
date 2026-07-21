@@ -1,11 +1,9 @@
 import { QueryCache, QueryClient, MutationCache } from "@tanstack/react-query";
 
-// Single place all query/mutation failures pass through — sync.ts's own
-// try/catch swallows network errors into `null` (best-effort sync), so
-// without this a 404/500 from a stale backend deploy looks identical to
-// "user is offline" and never surfaces anywhere.
+// Keep a structured console trace without triggering React Native's red error
+// overlay. Query consumers already expose these failures through their UI state.
 function logFailure(kind: "query" | "mutation", key: unknown, error: unknown) {
-  console.error(`[${kind}] ${JSON.stringify(key)} failed:`, error);
+  console.info(`[${kind}] ${JSON.stringify(key)} failed:`, error);
 }
 
 export const queryClient = new QueryClient({

@@ -60,16 +60,15 @@ export default function Dashboard() {
   const { t, lang } = useI18n();
   const {
     settings,
+    now,
     slots,
     next,
     nextDue,
-    spacingMin,
     progress,
     refresh,
     loading,
   } = useSchedule();
 
-  const [now, setNow] = useState<Date>(new Date());
   const [firstName, setFirstName] = useState<string | null>(null);
   const [weekOffset, setWeekOffset] = useState(0); // 0 = current week, negative = earlier weeks
   const [weekDays, setWeekDays] = useState<WeekDay[]>([]);
@@ -98,7 +97,6 @@ export default function Dashboard() {
   // Refresh progress whenever the dashboard regains focus (e.g. after a session).
   useFocusEffect(
     useCallback(() => {
-      setNow(new Date());
       refresh();
     }, [refresh]),
   );
@@ -205,7 +203,6 @@ export default function Dashboard() {
       {slots.length > 0 ? (
         <NextPracticeRow
           nextDue={nextDue}
-          now={now}
           remainingAfter={remainingAfter}
         />
       ) : null}

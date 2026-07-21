@@ -8,14 +8,16 @@ import type { Chakra } from "./types";
 // these instructions as on-screen text the user has to read, so an
 // eyes-closed cue doesn't work until there's a voice-guided narration option
 // to go with it. Reintroduce it once that lands.
-export const MANEUVERS: { n: number }[] = [
+export const MANEUVERS = [
   { n: 1 },
   { n: 2 },
   { n: 3 },
   { n: 4 },
   { n: 5 },
   { n: 6 },
-];
+] as const;
+
+export type ManeuverNumber = (typeof MANEUVERS)[number]["n"];
 
 // Chakra ids; labels are translated via i18n key `chakra.<id>`.
 export const CHAKRA_IDS: Chakra[] = [

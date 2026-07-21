@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "provider": "openai",
+  "model": "gpt-4o-mini-tts",
+  "voice": "marin",
+  "format": "mp3",
+  "instructionVersion": 2,
+  "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+  "clips": {
+    "en/1": {
+      "file": "en/1.mp3",
+      "textSha256": "7fe428e620be72142b9baeb29d683bc6b1873602cd36bad8fc4727a34fa12700",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:03:46.810Z"
+    },
+    "en/2": {
+      "file": "en/2.mp3",
+      "textSha256": "790a31b4d70f5fb929c8a2c2a81673d0f5a9319f653329ebb6e2fc9ab82875a8",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:03:49.337Z"
+    },
+    "en/3": {
+      "file": "en/3.mp3",
+      "textSha256": "054f703e329a1e1adb8b34d70d29f5bf3321077a26540efaa57be65289d08ff4",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:03:51.197Z"
+    },
+    "en/4": {
+      "file": "en/4.mp3",
+      "textSha256": "876cbbfa52da980b1f9276d4ea5cfdb28c2191f8520c57eec6bcc3c41ef8dfa7",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:03:52.795Z"
+    },
+    "en/5": {
+      "file": "en/5.mp3",
+      "textSha256": "d17016050c6fdc99f19ecd5e7a518560ed19091942603063848dd0f951444c60",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:03:54.516Z"
+    },
+    "en/6": {
+      "file": "en/6.mp3",
+      "textSha256": "3dfd83b0ba5110099ce36a092f3c94e4225045102eee0c46b281e27decfd1430",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:03:56.299Z"
+    },
+    "pt/1": {
+      "file": "pt/1.mp3",
+      "textSha256": "237629e483804b9ff4bab953524517a676ef35416d417022a3e5ba7d422f9347",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:02.395Z"
+    },
+    "pt/2": {
+      "file": "pt/2.mp3",
+      "textSha256": "4b85c8b0e330472e6eac34a35cd3c86e22df8d1cc2c614af2255a6dc15827dc6",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:04.578Z"
+    },
+    "pt/3": {
+      "file": "pt/3.mp3",
+      "textSha256": "043b08a5228067a6f452ca92837280941d91abf2741197a63a0d8a60d67430bd",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:06.474Z"
+    },
+    "pt/4": {
+      "file": "pt/4.mp3",
+      "textSha256": "16ae4f77650a6335052ce14749a6c82c786b17c5c07cf37880f0412f9451c65b",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:08.218Z"
+    },
+    "pt/5": {
+      "file": "pt/5.mp3",
+      "textSha256": "6258121f8586997ffd9a0e6148e8bf06214b2581f3263a020a97cb703152f905",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:10.005Z"
+    },
+    "pt/6": {
+      "file": "pt/6.mp3",
+      "textSha256": "3c207ab6360e386a89db20851ad4388e0a73492ffce759c44b30ac0d7c4a6597",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:12.179Z"
+    },
+    "es/1": {
+      "file": "es/1.mp3",
+      "textSha256": "ee2f4bedfdd1653c2f1900b40faea90c0a5486ad1f5cabd80dc344f0c4f3efe1",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:14.186Z"
+    },
+    "es/2": {
+      "file": "es/2.mp3",
+      "textSha256": "985410c26c5b0102185da7b2e05abf55dcff600a240cda461c98fe38d3ec160c",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:16.373Z"
+    },
+    "es/3": {
+      "file": "es/3.mp3",
+      "textSha256": "a3f3627ab9826d6bff7b0d07061ac3eb614a32255d67152e4f2aee3f58940a7d",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:17.931Z"
+    },
+    "es/4": {
+      "file": "es/4.mp3",
+      "textSha256": "8a78226606fcecfba44fa7c84dfb209f53808025c7d3df13ac7e912c01b63654",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:19.434Z"
+    },
+    "es/5": {
+      "file": "es/5.mp3",
+      "textSha256": "c12263f2036baf6fd55638a74277bc8acb884026a7d22588f70dcc892d914355",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:22.402Z"
+    },
+    "es/6": {
+      "file": "es/6.mp3",
+      "textSha256": "c9546492afc870007cc83944afdbbed0874082edf91f6155ffb6269bfac6ceff",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:24.534Z"
+    },
+    "fr/1": {
+      "file": "fr/1.mp3",
+      "textSha256": "9e61484d5ed17caa11579e8415c5aac26f234c38fb4d23437a0fd91ad3adc68f",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:26.794Z"
+    },
+    "fr/2": {
+      "file": "fr/2.mp3",
+      "textSha256": "b6e0cd5d563b5d9ad2b16e1fca84dbb2dc4b211603bd075faa32266d44ee2d3c",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:28.553Z"
+    },
+    "fr/3": {
+      "file": "fr/3.mp3",
+      "textSha256": "e7a059176ac4798ccfb070932271b6d71fe87c8594645a7870d8d174d13ba2b8",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:30.361Z"
+    },
+    "fr/4": {
+      "file": "fr/4.mp3",
+      "textSha256": "d9b25de27d92a26cff941ddd3d5e84a3ac6fbfe70c3f710064c55d811f47701e",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:36.280Z"
+    },
+    "fr/5": {
+      "file": "fr/5.mp3",
+      "textSha256": "09584cbfa4203b32907ccf830b1b62af12a72421342056efc0b858f665e56220",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:38.029Z"
+    },
+    "fr/6": {
+      "file": "fr/6.mp3",
+      "textSha256": "56fcd7df68adefce50dcdb0ec0e90d94c7bd31899117f3ccd183c0657c117018",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:40.143Z"
+    },
+    "it/1": {
+      "file": "it/1.mp3",
+      "textSha256": "6041eae4762e53317eb1fbf1db1b93f3ee1da586801e34f795a7aa26a982e816",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:42.190Z"
+    },
+    "it/2": {
+      "file": "it/2.mp3",
+      "textSha256": "a63d541baee364dc87d49126f9fb1b5343de25ede6162a3f763c0a11fd2cadcf",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:44.162Z"
+    },
+    "it/3": {
+      "file": "it/3.mp3",
+      "textSha256": "7a0d02a012e27a37dfc184c7871f42fe18dee0211f7c3a833e40ef1a0a34cadc",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:45.712Z"
+    },
+    "it/4": {
+      "file": "it/4.mp3",
+      "textSha256": "dc2bb5bfddc53bc7302fa556790a90a04f7f9796bebf6e2ef33a66b4a04bec0c",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:47.254Z"
+    },
+    "it/5": {
+      "file": "it/5.mp3",
+      "textSha256": "55c278371123092c7b1e05b7c1960cc8576aa1b13041904f98434a955ad6bc70",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:49.037Z"
+    },
+    "it/6": {
+      "file": "it/6.mp3",
+      "textSha256": "649197389a646a7863664cc7d558a0200ff0d7232db4fad03b9a90c7e2db42a5",
+      "generationHash": "54ff6115ec60eff48b3d67499c807fce2f5099fef1f7046026f88fc006775cd1",
+      "generatedAt": "2026-07-21T10:04:51.066Z"
+    }
+  },
+  "updatedAt": "2026-07-21T10:04:51.068Z"
+}

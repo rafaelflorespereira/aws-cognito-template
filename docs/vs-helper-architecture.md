@@ -154,14 +154,14 @@ A simple, focused screen to run one VS session.
 - On finish → mark the current slot complete, update progress, then navigate to the
   **report** screen (which can be skipped for on-the-run practice).
 - **Audio guide** (shipped): an opt-in `audioGuideEnabled` setting, independent
-  of `showGuidedSteps`, speaks each maneuver's full instruction once per step
-  via on-device text-to-speech (`expo-speech`, `src/features/vs/speech.ts`),
-  in the current UI language (all 5 supported languages, no new content
-  needed — it reads the existing `maneuver.*.text` strings). Speech stops
-  immediately on finish, cancel, or leaving the screen. Known limitation:
-  iOS `AVSpeechSynthesizer` doesn't reliably respect the hardware silent
-  switch — the toggle being off-by-default is the mitigation, not an audio
-  session workaround.
+  of `showGuidedSteps`, plays a bundled OpenAI-generated MP3 for each maneuver
+  via `expo-audio` (`src/features/vs/narration.ts`). There are 30 static clips:
+  6 maneuvers in each of the 5 supported languages. The OpenAI key is used only
+  by `scripts/generate-maneuver-audio.cjs`; it is never included in the mobile
+  app or needed at runtime. `npm run audio:check --workspace vs-helper` detects
+  narration that became stale after a `maneuver.*.text` translation changed.
+  Playback stops immediately on finish, cancel, step change, or leaving the
+  screen, and the settings label discloses that the narration is AI-generated.
 
 ### 4.3 Report screen (`report.tsx`)
 

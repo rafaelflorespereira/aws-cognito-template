@@ -54,6 +54,7 @@ export default function Account() {
   const {
     loading: lbLoading,
     profile,
+    profileError,
     refresh: refreshLeaderboard,
     saveProfile,
   } = useLeaderboard();
@@ -86,11 +87,15 @@ export default function Account() {
   }, [response, request, refreshLeaderboard]);
 
   useEffect(() => {
+    if (profileError) {
+      setLbHydrated(false);
+      return;
+    }
     if (lbLoading || lbHydrated) return;
     setHandle(profile.handle);
     setOptIn(profile.leaderboardOptIn);
     setLbHydrated(true);
-  }, [lbLoading, lbHydrated, profile]);
+  }, [lbLoading, lbHydrated, profile, profileError]);
 
   async function handleSignOut() {
     await clearTokens();
@@ -171,6 +176,14 @@ export default function Account() {
         <View style={styles.section}>
           <Text style={styles.subtitle}>{t("leaderboard.title")}</Text>
           <Text style={styles.intro}>{t("leaderboard.intro")}</Text>
+          {profileError ? (
+            <Text style={styles.error}>
+              {profileError.code === "unauthorized" ||
+              profileError.code === "signed_out"
+                ? t("leaderboard.authRequired")
+                : `${t("leaderboard.loadFailed")} (${profileError.code})`}
+            </Text>
+          ) : null}
 
           <View style={styles.field}>
             <Text style={styles.label}>{t("leaderboard.handleLabel")}</Text>
@@ -185,6 +198,7 @@ export default function Account() {
               placeholder={t("leaderboard.handlePlaceholder")}
               autoCapitalize="none"
               maxLength={20}
+              editable={!lbLoading && !profileError}
             />
           </View>
 
@@ -192,6 +206,7 @@ export default function Account() {
             <Text style={styles.switchLabel}>{t("leaderboard.optIn")}</Text>
             <Switch
               value={optIn}
+              disabled={lbLoading || !!profileError}
               onValueChange={(v) => {
                 setOptIn(v);
                 setFormError(null);
@@ -207,9 +222,13 @@ export default function Account() {
           ) : null}
 
           <TouchableOpacity
-            style={styles.saveBtn}
+            style={[
+              styles.saveBtn,
+              (saving || lbLoading || !!profileError) &&
+                styles.saveBtnDisabled,
+            ]}
             onPress={handleSaveLeaderboard}
-            disabled={saving}
+            disabled={saving || lbLoading || !!profileError}
           >
             <Text style={styles.saveText}>
               {saving ? t("leaderboard.saving") : t("leaderboard.save")}
@@ -299,5 +318,6 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
   },
+  saveBtnDisabled: { opacity: 0.5 },
   saveText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

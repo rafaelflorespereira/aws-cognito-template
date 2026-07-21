@@ -13,5 +13,8 @@
     "vs:backend:synth": "npm run synth --workspace vs-helper-backend",
     "vs:backend:deploy": "npm run deploy --workspace vs-helper-backend",
     "type-check": "npm run type-check --workspaces --if-present"
+  },
+  "devDependencies": {
+    "expo-asset": "12.0.13"
   }
 }

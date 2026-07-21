@@ -41,6 +41,7 @@ export interface UseLeaderboard {
   signedIn: boolean;
   profile: UserProfile;
   entries: LeaderboardEntry[];
+  profileError: SyncError | null;
   error: SyncError | null;
   refresh: () => Promise<void>;
   // Returns a structured error when the save is rejected (e.g. validation or
@@ -143,10 +144,13 @@ export function useLeaderboard(): UseLeaderboard {
   const loading =
     checkingSession ||
     (signedIn && (profileQuery.isLoading || leaderboardQuery.isLoading));
+  const profileError = profileQuery.error
+    ? getSyncError(profileQuery.error)
+    : null;
   const error = mutation.error
     ? getSyncError(mutation.error)
-    : profileQuery.error
-      ? getSyncError(profileQuery.error)
+    : profileError
+      ? profileError
       : leaderboardQuery.error
         ? getSyncError(leaderboardQuery.error)
         : null;
@@ -156,6 +160,7 @@ export function useLeaderboard(): UseLeaderboard {
     signedIn,
     profile: signedIn ? profileQuery.data ?? DEFAULT_PROFILE : DEFAULT_PROFILE,
     entries: signedIn ? leaderboardQuery.data ?? [] : [],
+    profileError,
     error,
     refresh,
     saveProfile,

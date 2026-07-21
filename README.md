@@ -118,15 +118,30 @@ run-it-locally guide.
 
 All `EXPO_PUBLIC_*` values are inlined into the app bundle at build time — they
 are **public, not secrets** (the App Client is a public PKCE client with no
-secret). They live in `apps/vs-helper/.env`.
+secret). `OPENAI_API_KEY` is different: it is a build-time secret used only by
+the local narration generator and is never referenced by the mobile app. They
+live in `apps/vs-helper/.env`.
 
-| Variable                          | Description                                                           |
-| --------------------------------- | --------------------------------------------------------------------- |
-| `EXPO_PUBLIC_COGNITO_ISSUER`      | OIDC issuer `https://cognito-idp.<region>.amazonaws.com/<userPoolId>` |
-| `EXPO_PUBLIC_USER_POOL_CLIENT_ID` | Cognito App Client ID (public PKCE client)                            |
-| `EXPO_PUBLIC_LOGOUT_URI`          | Optional hosted-UI sign-out URL (e.g. `vshelper://`)                  |
-| `EXPO_PUBLIC_APP_SCHEME`          | Must match `app.json → expo.scheme` (`vshelper`)                      |
-| `EXPO_PUBLIC_API_BASE_URL`        | Optional cloud-sync backend URL — leave unset to run fully on-device  |
+| Variable                          | Description                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------ |
+| `EXPO_PUBLIC_COGNITO_ISSUER`      | OIDC issuer `https://cognito-idp.<region>.amazonaws.com/<userPoolId>`          |
+| `EXPO_PUBLIC_USER_POOL_CLIENT_ID` | Cognito App Client ID (public PKCE client)                                     |
+| `EXPO_PUBLIC_LOGOUT_URI`          | Optional hosted-UI sign-out URL (e.g. `vshelper://`)                           |
+| `EXPO_PUBLIC_APP_SCHEME`          | Must match `app.json → expo.scheme` (`vshelper`)                               |
+| `EXPO_PUBLIC_API_BASE_URL`        | Optional cloud-sync backend URL — leave unset to run fully on-device           |
+| `OPENAI_API_KEY`                  | Secret used locally to regenerate static narration; never shipped in the app   |
+| `OPENAI_TTS_MODEL`                | Optional narration model override; defaults to `gpt-4o-mini-tts`               |
+| `OPENAI_TTS_VOICE`                | Optional narration voice override; defaults to `marin`                         |
+
+The generator also accepts the existing `EXPO_OPEN_API` name as a local alias,
+but `OPENAI_API_KEY` is preferred because it makes the build-time-only purpose
+clear. After changing any `maneuver.*.text` translation, regenerate and validate
+the bundled files:
+
+```bash
+npm run audio:generate --workspace vs-helper
+npm run audio:check --workspace vs-helper
+```
 
 ## Documentation
 

@@ -8,9 +8,10 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { useSchedule } from "@/features/vs/useSchedule";
 import { MANEUVERS } from "@/features/vs/content";
-import { speakManeuver, stopSpeaking } from "@/features/vs/speech";
+import { useManeuverNarration } from "@/features/vs/narration";
 import { useI18n, type TranslationKey } from "@/features/i18n";
 import PracticeBackground from "@/components/PracticeBackground";
 import EnergyBodyIllustration from "@/components/EnergyBodyIllustration";
@@ -18,6 +19,10 @@ import EnergyBodyIllustration from "@/components/EnergyBodyIllustration";
 const ILLUSTRATION_HEIGHT = 400;
 const SERIF = "PlayfairDisplay_600SemiBold";
 const PHRASE_MAX = 46; // target max characters per on-screen phrase
+
+function wrapLength(text: string): number {
+  return text.replace(/[.!?]+$/, "").length;
+}
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60);
@@ -31,19 +36,19 @@ function fmt(sec: number): string {
 function splitPhrases(text: string): string[] {
   const sentences = text
     .split(/(?<=[.!?])\s+/)
-    .map((s) => s.replace(/[.!?]+$/, "").trim())
+    .map((s) => s.trim())
     .filter(Boolean);
 
   const out: string[] = [];
   for (const sentence of sentences) {
-    if (sentence.length <= PHRASE_MAX) {
+    if (wrapLength(sentence) <= PHRASE_MAX) {
       out.push(sentence);
       continue;
     }
     let buf = "";
     for (const part of sentence.split(/,\s*/)) {
       const candidate = buf ? `${buf}, ${part}` : part;
-      if (candidate.length > PHRASE_MAX && buf) {
+      if (wrapLength(candidate) > PHRASE_MAX && buf) {
         out.push(buf);
         buf = part;
       } else {
@@ -54,14 +59,14 @@ function splitPhrases(text: string): string[] {
   }
 
   // Hard-wrap any remaining over-long chunk by words.
-  return out.flatMap((chunk) => {
-    if (chunk.length <= PHRASE_MAX * 1.4) return [chunk];
+  const wrapped = out.flatMap((chunk) => {
+    if (wrapLength(chunk) <= PHRASE_MAX * 1.4) return [chunk];
     const words = chunk.split(/\s+/);
     const wrapped: string[] = [];
     let line = "";
     for (const w of words) {
       const candidate = line ? `${line} ${w}` : w;
-      if (candidate.length > PHRASE_MAX && line) {
+      if (wrapLength(candidate) > PHRASE_MAX && line) {
         wrapped.push(line);
         line = w;
       } else {
@@ -71,6 +76,38 @@ function splitPhrases(text: string): string[] {
     if (line) wrapped.push(line);
     return wrapped;
   });
+
+  const tail = wrapped.at(-1);
+  const beforeTail = wrapped.at(-2);
+  if (
+    tail &&
+    beforeTail &&
+    tail.trim().split(/\s+/).length === 1 &&
+    wrapLength(`${beforeTail} ${tail}`) <= PHRASE_MAX * 1.4
+  ) {
+    wrapped.splice(-2, 2, `${beforeTail} ${tail}`);
+  }
+
+  return wrapped;
+}
+
+function phraseIndexAtProgress(phrases: string[], progress: number): number {
+  const weights = phrases.map((phrase) =>
+    Math.max(1, phrase.replace(/\s+/g, "").length),
+  );
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  const targetWeight =
+    Math.max(0, Math.min(1, progress)) * Math.max(1, totalWeight);
+
+  let cumulativeWeight = 0;
+  for (let index = 0; index < weights.length; index += 1) {
+    cumulativeWeight += weights[index];
+    if (targetWeight < cumulativeWeight) {
+      return index;
+    }
+  }
+
+  return Math.max(0, phrases.length - 1);
 }
 
 export default function Practice() {
@@ -82,6 +119,7 @@ export default function Practice() {
   const [remaining, setRemaining] = useState(settings.sessionDurationSec);
   const [running, setRunning] = useState(false);
   const [finishing, setFinishing] = useState(false);
+  const [muted, setMuted] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const startedAtRef = useRef<Date | null>(null);
 
@@ -104,22 +142,6 @@ export default function Practice() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remaining, running]);
 
-  async function finish() {
-    if (finishing) return;
-    setFinishing(true);
-    setRunning(false);
-    stopSpeaking();
-    try {
-      const slot = await completeCurrent({
-        completedAt: startedAtRef.current ?? undefined,
-      });
-      router.replace({ pathname: "/report", params: { slot } });
-    } catch {
-      // Let the user retry rather than leaving the screen wedged.
-      setFinishing(false);
-    }
-  }
-
   const totalSec = Math.max(1, settings.sessionDurationSec);
   const elapsed = totalSec - remaining;
   const elapsedRatio = elapsed / totalSec;
@@ -130,6 +152,28 @@ export default function Practice() {
     Math.max(1, Math.ceil(elapsedRatio * stepCount)),
   );
   const current = MANEUVERS[activeStep - 1];
+  const narration = useManeuverNarration({
+    enabled: running && settings.audioGuideEnabled,
+    muted,
+    lang,
+    maneuver: current.n,
+  });
+
+  async function finish() {
+    if (finishing) return;
+    setFinishing(true);
+    setRunning(false);
+    narration.stop();
+    try {
+      const slot = await completeCurrent({
+        completedAt: startedAtRef.current ?? undefined,
+      });
+      router.replace({ pathname: "/report", params: { slot } });
+    } catch {
+      // Let the user retry rather than leaving the screen wedged.
+      setFinishing(false);
+    }
+  }
 
   const stepDuration = totalSec / stepCount;
   const timeInStep = Math.max(
@@ -146,9 +190,13 @@ export default function Practice() {
     [current.n, lang],
   );
   const phraseCount = Math.max(1, phrases.length);
+  const phraseProgress =
+    running && settings.audioGuideEnabled && narration.duration > 0
+      ? narration.currentTime / narration.duration
+      : stepFill;
   const phraseIndex = Math.min(
     phraseCount - 1,
-    Math.floor(stepFill * phraseCount),
+    phraseIndexAtProgress(phrases, phraseProgress),
   );
   const phrase = phrases[phraseIndex] ?? "";
 
@@ -167,20 +215,6 @@ export default function Practice() {
     }).start();
   }, [fadeKey, fade]);
 
-  // Speaks the current maneuver's full instruction once per step (not the
-  // on-screen split phrases, which are a visual-only chunking device and
-  // would sound broken up if read piecemeal).
-  useEffect(() => {
-    if (!running || !settings.audioGuideEnabled) {
-      stopSpeaking();
-      return;
-    }
-    speakManeuver(t(`maneuver.${current.n}.text` as TranslationKey), lang);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeStep, running, settings.audioGuideEnabled, lang]);
-
-  useEffect(() => stopSpeaking, []);
-
   const guided = settings.showGuidedSteps;
 
   return (
@@ -190,6 +224,27 @@ export default function Practice() {
       <Text style={[styles.topTimer, { top: insets.top + 12 }]}>
         {fmt(remaining)}
       </Text>
+      {running && settings.audioGuideEnabled ? (
+        <TouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel={t(
+            muted ? "practice.unmute" : "practice.mute",
+          )}
+          style={[styles.muteButton, { top: insets.top + 6 }]}
+          onPress={() => setMuted((value) => !value)}
+          activeOpacity={0.8}
+          hitSlop={8}
+        >
+          <Ionicons
+            name={muted ? "volume-mute-outline" : "volume-high-outline"}
+            size={18}
+            color={muted ? "#9490ad" : "#d7d1f8"}
+          />
+          <Text style={[styles.muteText, muted && styles.muteTextMuted]}>
+            {t(muted ? "practice.unmute" : "practice.mute")}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
 
       <View style={styles.center}>
         <View style={styles.illustrationWrap} pointerEvents="none">
@@ -258,7 +313,7 @@ export default function Practice() {
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => {
-                stopSpeaking();
+                narration.stop();
                 router.back();
               }}
               hitSlop={12}
@@ -272,6 +327,7 @@ export default function Practice() {
               style={styles.startBtn}
               onPress={() => {
                 startedAtRef.current = new Date();
+                setMuted(false);
                 setRunning(true);
               }}
               activeOpacity={0.85}
@@ -301,6 +357,26 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontVariant: ["tabular-nums"],
     zIndex: 10,
+  },
+  muteButton: {
+    position: "absolute",
+    left: 20,
+    zIndex: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "rgba(43, 40, 54, 0.88)",
+  },
+  muteText: {
+    color: "#d7d1f8",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  muteTextMuted: {
+    color: "#9490ad",
   },
   center: {
     flex: 1,
