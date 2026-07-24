@@ -13,10 +13,10 @@ import { getStoredTokens, parseIdToken } from "@vs/auth";
 const DEFAULT_PROFILE: UserProfile = { handle: "", leaderboardOptIn: false };
 
 // HANDLE_RE in account.tsx / the backend only allows letters, digits, and
-// underscores — Google display names have spaces/accents/etc., so this is a
-// starting suggestion the user can still edit, not the saved value.
-function suggestHandle(googleName: string): string {
-  const cleaned = googleName
+// underscores. Identity-provider display names can contain spaces or accents,
+// so this is only an editable starting suggestion.
+function suggestHandle(displayName: string): string {
+  const cleaned = displayName
     .replace(/\s+/g, "_")
     .replace(/[^A-Za-z0-9_]/g, "")
     .slice(0, 20);
@@ -29,8 +29,8 @@ async function fetchProfile(): Promise<UserProfile> {
   if (profileResult.error) throw profileResult.error;
   const profile = profileResult.data ?? DEFAULT_PROFILE;
   if (!profile.handle && tokens) {
-    const googleName = parseIdToken(tokens.idToken).name;
-    const suggested = googleName ? suggestHandle(googleName) : "";
+    const displayName = parseIdToken(tokens.idToken).name;
+    const suggested = displayName ? suggestHandle(displayName) : "";
     if (suggested) return { ...profile, handle: suggested };
   }
   return profile;

@@ -1,7 +1,7 @@
 # Vibrational State (VS) Helper — Architecture
 
 > Feature architecture for the **Vibrational State helper**, built on top of the
-> existing Expo + AWS Cognito (Google SSO) authentication template. Authentication
+> existing Expo + AWS Cognito (Apple/Google SSO) authentication template. Authentication
 > is already in place (see [`architecture.md`](architecture.md)); this document
 > covers the VS-specific product.
 >
@@ -79,7 +79,7 @@ the ideal companion. The app helps the user:
 │  │   - useSchedule.ts → React hook (state + actions)       │  │
 │  │                                                         │  │
 │  │  @vs/auth (packages/auth — shared library)              │  │
-│  │   - Cognito/Google SSO → tokens in expo-secure-store    │  │
+│  │   - Cognito Apple/Google SSO → tokens in SecureStore    │  │
 │  │                                                         │  │
 │  │  Storage                                                │  │
 │  │   - expo-secure-store → auth tokens (via @vs/auth)      │  │
@@ -387,7 +387,7 @@ package; the VS helper is a separate app.
 aws-cognito-template/            # workspace root
 ├── package.json                 # workspaces: ["packages/*", "apps/*", "infra/*"]
 ├── packages/
-│   └── auth/                    # shared Cognito + Google SSO library (@vs/auth)
+│   └── auth/                    # shared Cognito Apple/Google SSO library (@vs/auth)
 │       ├── package.json         # name: "@vs/auth"
 │       └── src/
 │           ├── cognito.ts       # discovery doc + redirect URI
@@ -453,7 +453,7 @@ workspace package the VS app depends on (no publishing required).
   from the ID token).
 - Auth ships as the shared **`@vs/auth`** package. The VS
   app imports its public API (e.g. `getStoredTokens`, `LoginButton`) — the Cognito +
-  Google SSO flow itself is reused **unchanged** and simply no longer gates access.
+  Apple/Google SSO flow itself is reused and simply no longer gates access.
   A non-intrusive “Sign in to save your progress” prompt surfaces on the dashboard
   and after a report is saved.
 
@@ -463,8 +463,9 @@ Auth on Android uses the same OIDC **Authorization Code + PKCE** flow: the Cogni
 **Hosted UI** opens in a **Chrome Custom Tab** (`expo-web-browser`), Google is
 federated inside that browser, and the result returns to the app through a deep
 link. Because Google runs through Cognito's Hosted UI (a **web** OAuth client),
-there is **no native Google Sign-In** and therefore **no SHA-1/SHA-256 fingerprint**
-to register.
+there is **no native Google Sign-In** and therefore **no SHA-1/SHA-256
+fingerprint** to register. The App Store's equivalent Apple option is rendered
+with Apple's native button on iOS.
 
 **App configuration** (`apps/vs-helper/app.json`)
 
@@ -491,7 +492,7 @@ logs it before `promptAsync()` so you can register the exact string.
 - The Android emulator reaches your dev machine at `10.0.2.2`, not `localhost`.
 - `WebBrowser.maybeCompleteAuthSession()` (in `_layout.tsx`) dismisses the Custom
   Tab after the redirect.
-- Add `vshelper://` to the App Client **sign-out URLs** (mirrors `myapp://`).
+- Add `vshelper://` to the App Client **sign-out URLs**.
 - Cognito's Google identity provider keeps using the existing **Web** Google OAuth
   client — no separate Android OAuth client is needed.
 

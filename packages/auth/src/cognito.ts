@@ -17,6 +17,14 @@ export const issuer = process.env.EXPO_PUBLIC_COGNITO_ISSUER ?? "";
 const clientId = process.env.EXPO_PUBLIC_USER_POOL_CLIENT_ID ?? "";
 const scheme = process.env.EXPO_PUBLIC_APP_SCHEME ?? "vshelper";
 
+export const cognitoIdentityProviders = {
+  google: "Google",
+  apple: "SignInWithApple",
+} as const;
+
+export type CognitoIdentityProvider =
+  (typeof cognitoIdentityProviders)[keyof typeof cognitoIdentityProviders];
+
 export const cognitoConfig = {
   clientId,
   scopes: ["openid", "email", "profile"],

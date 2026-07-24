@@ -1,4 +1,11 @@
-export { cognitoConfig, issuer, getDiscovery, getRedirectUri } from "./cognito";
+export {
+  cognitoConfig,
+  cognitoIdentityProviders,
+  issuer,
+  getDiscovery,
+  getRedirectUri,
+  type CognitoIdentityProvider,
+} from "./cognito";
 
 export {
   exchangeCodeForTokens,

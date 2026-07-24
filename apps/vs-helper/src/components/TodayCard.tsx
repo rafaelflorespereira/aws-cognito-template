@@ -12,8 +12,8 @@ export interface TodayCardProps {
 
 // The home screen's hero: the count is the biggest thing on screen, and a
 // single segmented bar carries count + order + next in one glance (no circular
-// gauge). Done sessions and the immediate next one fill left-to-right; the
-// remaining slots stay as faint ticks.
+// gauge). Only completed sessions fill left-to-right; the immediate next one is
+// highlighted separately so elapsed schedule slots never look completed.
 export default function TodayCard({
   completed,
   target,
@@ -26,12 +26,7 @@ export default function TodayCard({
 
   const segmentCount = Math.max(1, target);
   const done = target > 0 && completed >= target;
-  // The next slot is the first not-yet-done one; fill up to and including it so
-  // the bar visibly "points" at what's coming next.
   const nextIndex = next ? slots.indexOf(next) : -1;
-  const fillThrough = done
-    ? segmentCount
-    : Math.max(completed, nextIndex >= 0 ? nextIndex + 1 : completed);
 
   return (
     <View style={styles.card}>
@@ -49,20 +44,19 @@ export default function TodayCard({
       <View style={styles.barRow}>
         {Array.from({ length: segmentCount }, (_, i) => {
           const isDone = i < completed;
-          const isNext = !done && i === nextIndex;
-          const filled = i < fillThrough;
+          const isNext = !done && !isDone && i === nextIndex;
           return (
             <View
               key={i}
               style={[
                 styles.segment,
-                filled
+                isDone
                   ? done
                     ? styles.segmentDone
                     : styles.segmentFilled
-                  : styles.segmentEmpty,
-                isNext && styles.segmentNext,
-                isDone && done && styles.segmentComplete,
+                  : isNext
+                    ? styles.segmentNext
+                    : styles.segmentEmpty,
               ]}
             />
           );
@@ -152,9 +146,6 @@ const styles = StyleSheet.create({
   },
   segmentDone: {
     height: BAR_HEIGHT,
-    backgroundColor: "#22c55e",
-  },
-  segmentComplete: {
     backgroundColor: "#22c55e",
   },
   boundsRow: {

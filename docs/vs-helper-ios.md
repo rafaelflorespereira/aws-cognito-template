@@ -2,7 +2,7 @@
 
 How to serve the **`apps/vs-helper`** app on iOS (Simulator or a physical iPhone
 via Expo Go). This is the day-to-day "run it locally" guide; for the one-time
-Cognito / Google setup see [`deployment.md`](deployment.md).
+Cognito / Apple / Google setup see [`deployment.md`](deployment.md).
 
 > This is a **monorepo** (npm workspaces). Dependencies are hoisted to the root
 > `node_modules`, and Metro is configured to watch the workspace root so it can

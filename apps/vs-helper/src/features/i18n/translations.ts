@@ -99,6 +99,8 @@ export const translations = {
     "account.loginTitle": "Save your progress",
     "account.loginSubtitle":
       "Signing in lets your sessions count across devices (optional).",
+    "account.signInWithApple": "Sign in with Apple",
+    "account.signInWithGoogle": "Sign in with Google",
     "account.signOut": "Sign out",
     "account.reauthBanner":
       "Your session expired. Sign in again to keep syncing.",
@@ -330,6 +332,8 @@ export const translations = {
     "account.loginTitle": "Salve seu progresso",
     "account.loginSubtitle":
       "Entrar permite que suas sessões contem em vários dispositivos (opcional).",
+    "account.signInWithApple": "Entrar com a Apple",
+    "account.signInWithGoogle": "Entrar com o Google",
     "account.signOut": "Sair",
     "account.reauthBanner":
       "Sua sessão expirou. Entre novamente para continuar sincronizando.",
@@ -563,6 +567,8 @@ export const translations = {
     "account.loginTitle": "Guarda tu progreso",
     "account.loginSubtitle":
       "Iniciar sesión permite que tus sesiones cuenten en varios dispositivos (opcional).",
+    "account.signInWithApple": "Iniciar sesión con Apple",
+    "account.signInWithGoogle": "Iniciar sesión con Google",
     "account.signOut": "Cerrar sesión",
     "account.reauthBanner":
       "Tu sesión expiró. Inicia sesión de nuevo para seguir sincronizando.",
@@ -798,6 +804,8 @@ export const translations = {
     "account.loginTitle": "Enregistrez votre progression",
     "account.loginSubtitle":
       "Se connecter permet à vos séances de compter sur plusieurs appareils (facultatif).",
+    "account.signInWithApple": "Se connecter avec Apple",
+    "account.signInWithGoogle": "Se connecter avec Google",
     "account.signOut": "Se déconnecter",
     "account.reauthBanner":
       "Votre session a expiré. Reconnectez-vous pour continuer la synchronisation.",
@@ -1038,6 +1046,8 @@ export const translations = {
     "account.loginTitle": "Salva i tuoi progressi",
     "account.loginSubtitle":
       "Accedendo, le tue sessioni contano su più dispositivi (facoltativo).",
+    "account.signInWithApple": "Accedi con Apple",
+    "account.signInWithGoogle": "Accedi con Google",
     "account.signOut": "Esci",
     "account.reauthBanner":
       "La sessione è scaduta. Accedi di nuovo per continuare la sincronizzazione.",

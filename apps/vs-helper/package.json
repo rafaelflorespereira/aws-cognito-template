@@ -22,6 +22,7 @@
     "@vs/auth": "*",
     "@vs/shared": "*",
     "expo": "^54.0.35",
+    "expo-apple-authentication": "~8.0.8",
     "expo-asset": "12.0.13",
     "expo-audio": "~1.1.1",
     "expo-auth-session": "~7.0.11",

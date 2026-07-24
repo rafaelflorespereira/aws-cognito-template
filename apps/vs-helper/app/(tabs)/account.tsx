@@ -7,12 +7,15 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as AuthSession from "expo-auth-session";
+import * as AppleAuthentication from "expo-apple-authentication";
 import {
   cognitoConfig,
+  cognitoIdentityProviders,
   issuer,
   getRedirectUri,
   exchangeCodeForTokens,
@@ -20,6 +23,7 @@ import {
   parseIdToken,
   clearTokens,
   LoginButton,
+  type CognitoIdentityProvider,
   type AuthUser,
 } from "@vs/auth";
 import { useI18n } from "@/features/i18n";
@@ -39,14 +43,31 @@ export default function Account() {
   const redirectUri = getRedirectUri();
   console.log("[auth] redirectUri:", redirectUri);
   const discovery = AuthSession.useAutoDiscovery(issuer);
-  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+  const [googleRequest, , promptGoogleAsync] = AuthSession.useAuthRequest(
     {
       clientId: cognitoConfig.clientId,
       scopes: cognitoConfig.scopes,
       redirectUri,
       responseType: AuthSession.ResponseType.Code,
       codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
-      extraParams: { identity_provider: "Google" },
+      extraParams: {
+        identity_provider: cognitoIdentityProviders.google,
+        prompt: "login",
+      },
+    },
+    discovery,
+  );
+  const [appleRequest, , promptAppleAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: cognitoConfig.clientId,
+      scopes: cognitoConfig.scopes,
+      redirectUri,
+      responseType: AuthSession.ResponseType.Code,
+      codeChallengeMethod: AuthSession.CodeChallengeMethod.S256,
+      extraParams: {
+        identity_provider: cognitoIdentityProviders.apple,
+        prompt: "login",
+      },
     },
     discovery,
   );
@@ -64,6 +85,8 @@ export default function Account() {
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [authenticatingProvider, setAuthenticatingProvider] =
+    useState<CognitoIdentityProvider | null>(null);
   const needsReauth = useNeedsReauth();
 
   useEffect(() => {
@@ -71,20 +94,6 @@ export default function Account() {
       if (t) setUser(parseIdToken(t.idToken));
     });
   }, []);
-
-  useEffect(() => {
-    if (response?.type !== "success" || !request?.codeVerifier) return;
-    exchangeCodeForTokens(response.params.code, request.codeVerifier)
-      .then((t) => {
-        setUser(parseIdToken(t.idToken));
-        // Pull/push settings now that we have a token; other screens' own
-        // useSchedule() picks up the merged result on their next focus.
-        void syncSettingsNow();
-        void syncSessionHistoryNow();
-        void refreshLeaderboard();
-      })
-      .catch((err) => console.error("[auth] token exchange failed:", err));
-  }, [response, request, refreshLeaderboard]);
 
   useEffect(() => {
     if (profileError) {
@@ -96,6 +105,38 @@ export default function Account() {
     setOptIn(profile.leaderboardOptIn);
     setLbHydrated(true);
   }, [lbLoading, lbHydrated, profile, profileError]);
+
+  async function handleSignIn(provider: CognitoIdentityProvider) {
+    const isApple = provider === cognitoIdentityProviders.apple;
+    const request = isApple ? appleRequest : googleRequest;
+    const promptAsync = isApple ? promptAppleAsync : promptGoogleAsync;
+
+    if (!request?.codeVerifier) {
+      console.error(`[auth] ${provider} request is not ready`);
+      return;
+    }
+
+    setAuthenticatingProvider(provider);
+    try {
+      const response = await promptAsync();
+      if (response.type !== "success") return;
+
+      const tokens = await exchangeCodeForTokens(
+        response.params.code,
+        request.codeVerifier,
+      );
+      setUser(parseIdToken(tokens.idToken));
+      // Pull/push settings now that we have a token; other screens' own
+      // useSchedule() picks up the merged result on their next focus.
+      void syncSettingsNow();
+      void syncSessionHistoryNow();
+      void refreshLeaderboard();
+    } catch (err) {
+      console.error(`[auth] ${provider} sign-in failed:`, err);
+    } finally {
+      setAuthenticatingProvider(null);
+    }
+  }
 
   async function handleSignOut() {
     await clearTokens();
@@ -129,6 +170,14 @@ export default function Account() {
     setSaved(true);
   }
 
+  const reauthProvider =
+    user?.identityProvider ?? cognitoIdentityProviders.google;
+  const reauthRequest =
+    reauthProvider === cognitoIdentityProviders.apple
+      ? appleRequest
+      : googleRequest;
+  const authBusy = authenticatingProvider !== null;
+
   return (
     <ScrollView
       contentContainerStyle={[
@@ -142,7 +191,10 @@ export default function Account() {
         <View style={styles.reauthBanner}>
           <Ionicons name="alert-circle" size={20} color="#b45309" />
           <Text style={styles.reauthText}>{t("account.reauthBanner")}</Text>
-          <TouchableOpacity disabled={!request} onPress={() => promptAsync()}>
+          <TouchableOpacity
+            disabled={!reauthRequest || authBusy}
+            onPress={() => void handleSignIn(reauthProvider)}
+          >
             <Text style={styles.reauthAction}>
               {t("account.reauthAction")}
             </Text>
@@ -163,12 +215,44 @@ export default function Account() {
         <View style={styles.authPrompt}>
           <Ionicons name="cloud-upload-outline" size={56} color="#94a3b8" />
           <Text style={styles.blurb}>{t("account.blurb")}</Text>
-          <LoginButton
-            title={t("account.loginTitle")}
-            subtitle={t("account.loginSubtitle")}
-            disabled={!request}
-            onPress={() => promptAsync()}
-          />
+          <View style={styles.loginCard}>
+            <Text style={styles.loginTitle}>{t("account.loginTitle")}</Text>
+            <Text style={styles.loginSubtitle}>
+              {t("account.loginSubtitle")}
+            </Text>
+            {Platform.OS === "ios" ? (
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={
+                  AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+                }
+                buttonStyle={
+                  AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+                }
+                cornerRadius={8}
+                style={styles.appleLoginButton}
+                pointerEvents={!appleRequest || authBusy ? "none" : "auto"}
+                accessibilityState={{
+                  disabled: !appleRequest || authBusy,
+                  busy:
+                    authenticatingProvider === cognitoIdentityProviders.apple,
+                }}
+                onPress={() =>
+                  void handleSignIn(cognitoIdentityProviders.apple)
+                }
+              />
+            ) : null}
+            <LoginButton
+              label={t("account.signInWithGoogle")}
+              icon={<Ionicons name="logo-google" size={20} color="#4285f4" />}
+              disabled={!googleRequest || authBusy}
+              loading={
+                authenticatingProvider === cognitoIdentityProviders.google
+              }
+              onPress={() =>
+                void handleSignIn(cognitoIdentityProviders.google)
+              }
+            />
+          </View>
         </View>
       )}
 
@@ -270,6 +354,35 @@ const styles = StyleSheet.create({
   name: { fontSize: 18, fontWeight: "700", color: "#0f172a" },
   email: { fontSize: 14, color: "#64748b" },
   authPrompt: { width: "100%", alignItems: "center", gap: 16, maxWidth: 360 },
+  loginCard: {
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+    width: "100%",
+  },
+  loginTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1e293b",
+    textAlign: "center",
+  },
+  loginSubtitle: {
+    fontSize: 14,
+    color: "#64748b",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  appleLoginButton: {
+    width: "100%",
+    height: 48,
+  },
   blurb: {
     fontSize: 14,
     color: "#64748b",

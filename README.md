@@ -7,7 +7,7 @@ Because the technique is meant to be repeated ~20 times daily, the app schedules
 evenly-spaced reminders, guides you through each session, lets you log how it
 felt, and tracks your streaks, stats, and achievements. Built with **Expo**
 (React Native), it runs fully on-device and can optionally sign in with
-**Google via AWS Cognito** to sync your history to the cloud.
+**Apple or Google via AWS Cognito** to sync your history to the cloud.
 
 <p align="center">
   <img src="docs/screenshot-dashboard.png" alt="Dashboard" width="24%" />
@@ -33,8 +33,8 @@ felt, and tracks your streaks, stats, and achievements. Built with **Expo**
 - **Progress & gamification** — daily goal ring, weekly bars, streaks, lifetime
   stats, and unlockable achievements.
 - **Leaderboard** — opt-in ranking against other practitioners (requires sign-in).
-- **Optional login** — works fully offline; sign in with Google to sync settings,
-  sessions, and stats across devices.
+- **Optional login** — works fully offline; sign in with Apple or Google to sync
+  settings, sessions, and stats across devices.
 
 ## The 6 maneuvers
 
@@ -56,7 +56,7 @@ session is:
 | App           | Expo (React Native), `expo-router`, TypeScript                |
 | State / data  | `@tanstack/react-query`, AsyncStorage (on-device persistence) |
 | Notifications | `expo-notifications` (local, scheduled)                       |
-| Auth          | AWS Cognito + Google OAuth 2.0 (PKCE) via `expo-auth-session` |
+| Auth          | AWS Cognito + Apple/Google OAuth (PKCE) via `expo-auth-session` |
 | Backend (opt) | AWS CDK — API Gateway + Lambda + DynamoDB                     |
 
 ## Monorepo layout
@@ -77,7 +77,7 @@ aws-cognito-template/
 │           ├── components/      #   UI (ProgressRing, WeekCard, PracticeStep…)
 │           └── features/i18n/   #   translations
 ├── packages/
-│   ├── auth/                    # @vs/auth — Cognito/Google SSO (shared)
+│   ├── auth/                    # @vs/auth — Cognito Apple/Google SSO (shared)
 │   └── vs-shared/               # @vs/shared — types + stats logic shared with backend
 ├── infra/
 │   └── vs-helper-backend/       # AWS CDK: optional cloud-sync + leaderboard API
@@ -110,8 +110,8 @@ npm run vs          # start the Expo dev server
 ```
 
 You can run the app immediately without touching `.env` — it works fully
-on-device. Fill in the OIDC values only when you want Google login and cloud
-sync. See [`docs/vs-helper-ios.md`](docs/vs-helper-ios.md) for the full
+on-device. Fill in the OIDC values only when you want Apple/Google login and
+cloud sync. See [`docs/vs-helper-ios.md`](docs/vs-helper-ios.md) for the full
 run-it-locally guide.
 
 ## Environment variables
@@ -149,7 +149,7 @@ npm run audio:check --workspace vs-helper
 - [Run on iOS (Simulator / device)](docs/vs-helper-ios.md)
 - [Cloud-sync backend (AWS CDK)](docs/vs-helper-backend.md)
 - [Auth architecture](docs/architecture.md)
-- [Cognito + Google SSO setup & deployment](docs/deployment.md)
+- [Cognito + Apple/Google SSO setup & deployment](docs/deployment.md)
 
 ## License
 

@@ -1,74 +1,64 @@
+import type { ReactNode } from "react";
 import {
   TouchableOpacity,
   Text,
-  View,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
 
 interface Props {
   onPress: () => void;
+  label: string;
   disabled?: boolean;
-  title?: string;
-  subtitle?: string;
+  loading?: boolean;
+  icon?: ReactNode;
+  variant?: "light" | "dark";
 }
 
 export default function LoginButton({
   onPress,
+  label,
   disabled,
-  title = "Sign in",
-  subtitle = "Sign in to save your progress",
+  loading = false,
+  icon,
+  variant = "light",
 }: Props) {
+  const isDark = variant === "dark";
+
   return (
-    <View style={styles.wrapper}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.subtitle}>{subtitle}</Text>
-      <TouchableOpacity
-        style={[styles.button, disabled && styles.buttonDisabled]}
-        onPress={onPress}
-        disabled={disabled}
-        activeOpacity={0.8}
-      >
-        {disabled ? (
-          <ActivityIndicator color="#374151" />
-        ) : (
-          <Text style={styles.buttonText}>Sign in with Google</Text>
-        )}
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled, busy: loading }}
+      style={[
+        styles.button,
+        isDark && styles.buttonDark,
+        disabled && styles.buttonDisabled,
+      ]}
+      onPress={onPress}
+      disabled={disabled}
+      activeOpacity={0.8}
+    >
+      {loading ? (
+        <ActivityIndicator color={isDark ? "#fff" : "#374151"} />
+      ) : (
+        <>
+          {icon}
+          <Text style={[styles.buttonText, isDark && styles.buttonTextDark]}>
+            {label}
+          </Text>
+        </>
+      )}
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 32,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-    width: "100%",
-    maxWidth: 360,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1e293b",
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#64748b",
-    marginBottom: 8,
-  },
   button: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 10,
     borderWidth: 1,
     borderColor: "#d1d5db",
     borderRadius: 8,
@@ -78,6 +68,10 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 48,
   },
+  buttonDark: {
+    backgroundColor: "#000",
+    borderColor: "#000",
+  },
   buttonDisabled: {
     opacity: 0.5,
   },
@@ -85,5 +79,8 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500",
     color: "#374151",
+  },
+  buttonTextDark: {
+    color: "#fff",
   },
 });

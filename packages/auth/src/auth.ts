@@ -1,6 +1,12 @@
 import * as AuthSession from "expo-auth-session";
 import * as SecureStore from "expo-secure-store";
-import { cognitoConfig, getDiscovery, getRedirectUri } from "./cognito";
+import {
+  cognitoConfig,
+  cognitoIdentityProviders,
+  getDiscovery,
+  getRedirectUri,
+  type CognitoIdentityProvider,
+} from "./cognito";
 
 const KEYS = {
   idToken: "auth.id_token",
@@ -19,6 +25,7 @@ export interface AuthUser {
   email: string;
   name?: string;
   picture?: string;
+  identityProvider?: CognitoIdentityProvider;
 }
 
 export async function exchangeCodeForTokens(
@@ -93,7 +100,27 @@ export function parseIdToken(idToken: string): AuthUser {
     email: decoded.email,
     name: decoded.name,
     picture: decoded.picture,
+    identityProvider: getIdentityProvider(decoded.identities),
   };
+}
+
+function getIdentityProvider(
+  identities: unknown,
+): CognitoIdentityProvider | undefined {
+  if (!Array.isArray(identities)) return undefined;
+
+  for (const identity of identities) {
+    if (typeof identity !== "object" || identity === null) continue;
+    const providerName = Reflect.get(identity, "providerName");
+    if (
+      providerName === cognitoIdentityProviders.google ||
+      providerName === cognitoIdentityProviders.apple
+    ) {
+      return providerName;
+    }
+  }
+
+  return undefined;
 }
 
 async function saveTokens(tokens: AuthTokens): Promise<void> {

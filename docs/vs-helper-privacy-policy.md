@@ -1,6 +1,6 @@
 # Vibrational State — Privacy Policy
 
-_Last updated: 2026-07-15_
+_Last updated: 2026-07-23_
 
 This policy covers the **Vibrational State** app ("the app"). The published,
 public version lives at [`privacy-policy.html`](privacy-policy.html) (served via
@@ -13,11 +13,13 @@ requires a live privacy policy URL before review.
 device: your practice schedule, daily progress, session history, and any
 post-session reflections you save. None of it leaves your phone.
 
-**If you sign in** (optional, via Google through Amazon Cognito), we also
-process:
+**If you sign in** (optional, via Sign in with Apple or Google through Amazon
+Cognito), we also process:
 
-- Your **email address, name, and profile picture**, as provided by Google —
-  used only to identify your account and show it in the app.
+- Your **email address** and, when supplied by your chosen provider, your
+  **name** and **profile picture** — used only to identify your account and show
+  it in the app. If you choose Apple's **Hide My Email**, we receive and store
+  only Apple's private relay address, not your personal email address.
 - Your **practice settings** (times per day, practice window, session length)
   and **session history** (dates/times you practiced), synced so they carry
   over across devices. This is keyed to an anonymous account identifier, not
@@ -30,6 +32,7 @@ signed in.
 ## What we don't do
 
 - No advertising, no ad networks, no third-party analytics or trackers.
+- No use of your app interactions for advertising or cross-app tracking.
 - No selling or sharing your data with third parties.
 - No location, contacts, camera, or microphone access.
 
