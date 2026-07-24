@@ -12,7 +12,7 @@
     "expo-secure-store": "~15.0.8"
   },
   "peerDependencies": {
-    "expo": "*",
+    "expo": "^54.0.35",
     "react": "*",
     "react-native": "*"
   },
