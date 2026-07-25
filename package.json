@@ -9,6 +9,8 @@
   ],
   "scripts": {
     "vs": "npm run start --workspace vs-helper",
+    "vs:dev": "npm run start:dev --workspace vs-helper",
+    "vs:dev:tunnel": "npm run start:dev:tunnel --workspace vs-helper",
     "vs:tunnel": "npm run start:tunnel --workspace vs-helper",
     "vs:backend:synth": "npm run synth --workspace vs-helper-backend",
     "vs:backend:deploy": "npm run deploy --workspace vs-helper-backend",

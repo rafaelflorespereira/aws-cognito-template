@@ -89,7 +89,7 @@ aws-cognito-template/
 | Tool                 | Version | Purpose                                  |
 | -------------------- | ------- | ---------------------------------------- |
 | Node.js              | ≥ 18    | Runtime                                  |
-| Expo Go / Xcode      | latest  | Run on a device or the iOS Simulator     |
+| Expo Go / Xcode      | latest  | Run UI locally; OAuth requires a development build |
 | AWS account          | —       | _Optional_ — Cognito login + cloud sync  |
 | Google Cloud account | —       | _Optional_ — Google OAuth credentials    |
 
@@ -112,7 +112,8 @@ npm run vs          # start the Expo dev server
 You can run the app immediately without touching `.env` — it works fully
 on-device. Fill in the OIDC values only when you want Apple/Google login and
 cloud sync. See [`docs/vs-helper-ios.md`](docs/vs-helper-ios.md) for the full
-run-it-locally guide.
+run-it-locally guide. Expo Go is suitable for the offline UI, but Cognito
+OAuth/OIDC sign-in must be tested in the project's EAS development build.
 
 ## Environment variables
 

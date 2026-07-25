@@ -35,8 +35,17 @@ export const cognitoConfig = {
 // Components should use AuthSession.useAutoDiscovery(issuer) instead.
 let discoveryPromise: Promise<AuthSession.DiscoveryDocument> | null = null;
 export function getDiscovery(): Promise<AuthSession.DiscoveryDocument> {
+  if (!issuer) {
+    return Promise.reject(
+      new Error("EXPO_PUBLIC_COGNITO_ISSUER is not configured"),
+    );
+  }
+
   if (!discoveryPromise) {
-    discoveryPromise = AuthSession.fetchDiscoveryAsync(issuer);
+    discoveryPromise = AuthSession.fetchDiscoveryAsync(issuer).catch((error) => {
+      discoveryPromise = null;
+      throw error;
+    });
   }
   return discoveryPromise;
 }

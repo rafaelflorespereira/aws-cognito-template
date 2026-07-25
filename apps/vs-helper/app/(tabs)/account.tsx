@@ -13,10 +13,12 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as AuthSession from "expo-auth-session";
 import * as AppleAuthentication from "expo-apple-authentication";
+import Constants, { ExecutionEnvironment } from "expo-constants";
 import {
   cognitoConfig,
   cognitoIdentityProviders,
   issuer,
+  getDiscovery,
   getRedirectUri,
   exchangeCodeForTokens,
   getStoredTokens,
@@ -41,8 +43,11 @@ export default function Account() {
   const insets = useSafeAreaInsets();
   const [user, setUser] = useState<AuthUser | null>(null);
   const redirectUri = getRedirectUri();
-  console.log("[auth] redirectUri:", redirectUri);
-  const discovery = AuthSession.useAutoDiscovery(issuer);
+  const isExpoGo =
+    Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+  const [discovery, setDiscovery] =
+    useState<AuthSession.DiscoveryDocument | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   const [googleRequest, , promptGoogleAsync] = AuthSession.useAuthRequest(
     {
       clientId: cognitoConfig.clientId,
@@ -90,9 +95,54 @@ export default function Account() {
   const needsReauth = useNeedsReauth();
 
   useEffect(() => {
-    getStoredTokens().then((t) => {
-      if (t) setUser(parseIdToken(t.idToken));
+    let active = true;
+
+    if (isExpoGo) {
+      return () => {
+        active = false;
+      };
+    }
+
+    if (!issuer || !cognitoConfig.clientId) {
+      setAuthError("Cognito issuer or app client ID is missing");
+      return () => {
+        active = false;
+      };
+    }
+
+    console.log("[auth] redirectUri:", redirectUri);
+    void getDiscovery()
+      .then((document) => {
+        if (active) setDiscovery(document);
+      })
+      .catch((error: unknown) => {
+        const message = getErrorMessage(error);
+        console.error("[auth] discovery failed:", error);
+        if (active) setAuthError(message);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isExpoGo, redirectUri]);
+
+  useEffect(() => {
+    let active = true;
+
+    void getStoredTokens().then(async (tokens) => {
+      if (!active || !tokens) return;
+      try {
+        setUser(parseIdToken(tokens.idToken));
+      } catch (error) {
+        console.error("[auth] stored ID token is invalid:", error);
+        await clearTokens();
+        if (active) setAuthError(getErrorMessage(error));
+      }
     });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -107,22 +157,38 @@ export default function Account() {
   }, [lbLoading, lbHydrated, profile, profileError]);
 
   async function handleSignIn(provider: CognitoIdentityProvider) {
+    if (isExpoGo) return;
+
     const isApple = provider === cognitoIdentityProviders.apple;
     const request = isApple ? appleRequest : googleRequest;
     const promptAsync = isApple ? promptAppleAsync : promptGoogleAsync;
 
     if (!request?.codeVerifier) {
-      console.error(`[auth] ${provider} request is not ready`);
+      const message = "Authorization request is not ready";
+      console.error(`[auth] ${provider}: ${message}`);
+      setAuthError(message);
       return;
     }
 
+    setAuthError(null);
     setAuthenticatingProvider(provider);
     try {
       const response = await promptAsync();
-      if (response.type !== "success") return;
+      if (response.type === "cancel" || response.type === "dismiss") return;
+      if (response.type !== "success") {
+        const message = getAuthResponseError(response);
+        console.error(`[auth] ${provider} sign-in failed: ${message}`);
+        setAuthError(message);
+        return;
+      }
+
+      const code = response.params.code;
+      if (!code) {
+        throw new Error("Authorization response did not include a code");
+      }
 
       const tokens = await exchangeCodeForTokens(
-        response.params.code,
+        code,
         request.codeVerifier,
       );
       setUser(parseIdToken(tokens.idToken));
@@ -133,6 +199,7 @@ export default function Account() {
       void refreshLeaderboard();
     } catch (err) {
       console.error(`[auth] ${provider} sign-in failed:`, err);
+      setAuthError(getErrorMessage(err));
     } finally {
       setAuthenticatingProvider(null);
     }
@@ -142,6 +209,7 @@ export default function Account() {
     await clearTokens();
     setUser(null);
     setLbHydrated(false);
+    setAuthError(null);
   }
 
   async function handleSaveLeaderboard() {
@@ -230,9 +298,11 @@ export default function Account() {
                 }
                 cornerRadius={8}
                 style={styles.appleLoginButton}
-                pointerEvents={!appleRequest || authBusy ? "none" : "auto"}
+                pointerEvents={
+                  isExpoGo || !appleRequest || authBusy ? "none" : "auto"
+                }
                 accessibilityState={{
-                  disabled: !appleRequest || authBusy,
+                  disabled: isExpoGo || !appleRequest || authBusy,
                   busy:
                     authenticatingProvider === cognitoIdentityProviders.apple,
                 }}
@@ -244,7 +314,7 @@ export default function Account() {
             <LoginButton
               label={t("account.signInWithGoogle")}
               icon={<Ionicons name="logo-google" size={20} color="#4285f4" />}
-              disabled={!googleRequest || authBusy}
+              disabled={isExpoGo || !googleRequest || authBusy}
               loading={
                 authenticatingProvider === cognitoIdentityProviders.google
               }
@@ -252,6 +322,26 @@ export default function Account() {
                 void handleSignIn(cognitoIdentityProviders.google)
               }
             />
+            {isExpoGo ? (
+              <View style={styles.authNoticeBox}>
+                <Ionicons name="information-circle" size={18} color="#92400e" />
+                <Text style={styles.authNoticeText}>
+                  {t("account.expoGoUnsupported")}
+                </Text>
+              </View>
+            ) : authError ? (
+              <View style={styles.authErrorBox}>
+                <Ionicons name="alert-circle" size={18} color="#b91c1c" />
+                <Text style={styles.authErrorText} selectable>
+                  {t("account.signInError", { message: authError })}
+                </Text>
+              </View>
+            ) : null}
+            {!isExpoGo && authError && __DEV__ ? (
+              <Text style={styles.authDiagnostic} selectable>
+                redirect_uri: {redirectUri}
+              </Text>
+            ) : null}
           </View>
         </View>
       )}
@@ -324,6 +414,31 @@ export default function Account() {
   );
 }
 
+function getAuthResponseError(
+  response: AuthSession.AuthSessionResult,
+): string {
+  if (response.type === "error") {
+    return (
+      response.error?.description ??
+      response.error?.message ??
+      response.params.error_description ??
+      response.params.error ??
+      response.errorCode ??
+      "Unknown authorization error"
+    );
+  }
+  if (response.type === "locked") {
+    return "Another sign-in session is already open";
+  }
+  return `Authentication ended with status "${response.type}"`;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return "Unknown authentication error";
+}
+
 const styles = StyleSheet.create({
   container: {
     padding: 24,
@@ -382,6 +497,46 @@ const styles = StyleSheet.create({
   appleLoginButton: {
     width: "100%",
     height: 48,
+  },
+  authErrorBox: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    backgroundColor: "#fef2f2",
+  },
+  authNoticeBox: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#fde68a",
+    backgroundColor: "#fffbeb",
+  },
+  authNoticeText: {
+    flex: 1,
+    color: "#92400e",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  authErrorText: {
+    flex: 1,
+    color: "#991b1b",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  authDiagnostic: {
+    width: "100%",
+    color: "#64748b",
+    fontSize: 11,
+    lineHeight: 16,
   },
   blurb: {
     fontSize: 14,

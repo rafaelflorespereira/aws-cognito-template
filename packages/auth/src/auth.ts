@@ -44,8 +44,12 @@ export async function exchangeCodeForTokens(
     discovery,
   );
 
+  if (!result.idToken) {
+    throw new Error("Cognito token response did not include an ID token");
+  }
+
   const tokens: AuthTokens = {
-    idToken: result.idToken!,
+    idToken: result.idToken,
     accessToken: result.accessToken,
     refreshToken: result.refreshToken ?? null,
   };
@@ -63,8 +67,11 @@ export async function refreshAccessToken(
       { clientId: cognitoConfig.clientId, refreshToken },
       discovery,
     );
+    if (!result.idToken) {
+      throw new Error("Cognito refresh response did not include an ID token");
+    }
     const tokens: AuthTokens = {
-      idToken: result.idToken!,
+      idToken: result.idToken,
       accessToken: result.accessToken,
       refreshToken: result.refreshToken ?? refreshToken,
     };
@@ -94,14 +101,38 @@ export async function clearTokens(): Promise<void> {
 
 export function parseIdToken(idToken: string): AuthUser {
   const payload = idToken.split(".")[1];
-  const decoded = JSON.parse(atob(payload));
+  if (!payload) throw new Error("Invalid Cognito ID token");
+
+  const decoded = decodeJwtPayload(payload);
+  if (typeof decoded.sub !== "string" || typeof decoded.email !== "string") {
+    throw new Error("Cognito ID token is missing required user claims");
+  }
+
   return {
     sub: decoded.sub,
     email: decoded.email,
-    name: decoded.name,
-    picture: decoded.picture,
+    name: typeof decoded.name === "string" ? decoded.name : undefined,
+    picture: typeof decoded.picture === "string" ? decoded.picture : undefined,
     identityProvider: getIdentityProvider(decoded.identities),
   };
+}
+
+function decodeJwtPayload(payload: string): Record<string, unknown> {
+  const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = normalized.padEnd(
+    normalized.length + ((4 - (normalized.length % 4)) % 4),
+    "=",
+  );
+  const binary = atob(padded);
+  const percentEncoded = Array.from(binary, (char) =>
+    `%${char.charCodeAt(0).toString(16).padStart(2, "0")}`,
+  ).join("");
+  const decoded: unknown = JSON.parse(decodeURIComponent(percentEncoded));
+
+  if (typeof decoded !== "object" || decoded === null) {
+    throw new Error("Invalid Cognito ID token payload");
+  }
+  return decoded as Record<string, unknown>;
 }
 
 function getIdentityProvider(
@@ -129,6 +160,6 @@ async function saveTokens(tokens: AuthTokens): Promise<void> {
     SecureStore.setItemAsync(KEYS.accessToken, tokens.accessToken),
     tokens.refreshToken
       ? SecureStore.setItemAsync(KEYS.refreshToken, tokens.refreshToken)
-      : Promise.resolve(),
+      : SecureStore.deleteItemAsync(KEYS.refreshToken),
   ]);
 }

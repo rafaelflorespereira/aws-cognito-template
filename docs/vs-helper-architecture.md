@@ -474,22 +474,21 @@ with Apple's native button on iOS.
 - `expo.android.package: "com.rafaelflorespereira.vshelper"` — required for builds.
 - `plugins: ["expo-router", "expo-secure-store", "expo-notifications"]`.
 
-**Redirect URIs by environment** (register each in the Cognito App Client)
+**Redirect URI by environment**
 
-| Environment               | Android redirect URI                  |
-| ------------------------- | ------------------------------------- |
-| Expo Go (emulator)        | `exp://10.0.2.2:8081/--/callback`     |
-| Expo Go (physical device) | `exp://<machine-ip>:8081/--/callback` |
-| Standalone / EAS build    | `vshelper://callback`                 |
+| Environment             | Android redirect URI      |
+| ----------------------- | ------------------------- |
+| EAS development build   | `vshelper://callback`     |
+| Standalone / EAS build  | `vshelper://callback`     |
+| Expo Go                 | OAuth/OIDC not supported  |
 
-`makeRedirectUri()` in `@vs/auth` resolves the correct value at runtime; the app
-logs it before `promptAsync()` so you can register the exact string.
+`makeRedirectUri()` in `@vs/auth` resolves the custom scheme at runtime. Use the
+development build for local OAuth testing; Expo Go cannot receive the redirect.
 
 **Notes**
 
 - Tokens are stored in the Android **Keystore** via `expo-secure-store` (never in
   AsyncStorage).
-- The Android emulator reaches your dev machine at `10.0.2.2`, not `localhost`.
 - `WebBrowser.maybeCompleteAuthSession()` (in `_layout.tsx`) dismisses the Custom
   Tab after the redirect.
 - Add `vshelper://` to the App Client **sign-out URLs**.

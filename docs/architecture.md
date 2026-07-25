@@ -35,7 +35,6 @@
 │  │   - responseType: code                                 │  │
 │  │   - scopes: openid, email, profile                     │  │
 │  │   - callbackUrls: vshelper://callback                  │  │
-│  │                     exp://localhost:8081/--/callback   │  │
 │  │                                                        │  │
 │  │  Google Identity Provider                              │  │
 │  │   - Client ID + Secret from Google Cloud Console       │  │
@@ -88,12 +87,11 @@ Call `refreshAccessToken()` from `src/lib/auth.ts` before the Access Token expir
 
 ## Redirect URI by Environment
 
-| Environment                | Redirect URI                   |
-| -------------------------- | ------------------------------ |
-| iOS Simulator (Expo Go)    | `exp://localhost:8081/--/callback`         |
-| Android Emulator (Expo Go) | `exp://10.0.2.2:8081/--/callback`          |
-| Physical device (Expo Go)  | `exp://<your-machine-ip>:8081/--/callback` |
-| Standalone / EAS Build     | `vshelper://callback`                       |
+| Environment             | Redirect URI              |
+| ----------------------- | ------------------------- |
+| EAS development build   | `vshelper://callback`     |
+| Standalone / EAS Build  | `vshelper://callback`     |
+| Expo Go                 | OAuth/OIDC not supported  |
 
 `expo-auth-session`'s `makeRedirectUri()` resolves the correct URI at runtime automatically.
 

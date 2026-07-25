@@ -1,7 +1,7 @@
 # Publishing the VS Helper to the App Store
 
 End-to-end steps to build **`apps/vs-helper`** and ship it to the Apple App Store
-using **EAS Build** and **EAS Submit**. For local dev-server testing (Expo Go),
+using **EAS Build** and **EAS Submit**. For local development-client testing,
 see [`vs-helper-ios.md`](vs-helper-ios.md); for the Cognito setup, see
 [`deployment.md`](deployment.md).
 

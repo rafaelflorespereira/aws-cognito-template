@@ -1,8 +1,8 @@
 # Running the VS Helper on iOS
 
-How to serve the **`apps/vs-helper`** app on iOS (Simulator or a physical iPhone
-via Expo Go). This is the day-to-day "run it locally" guide; for the one-time
-Cognito / Apple / Google setup see [`deployment.md`](deployment.md).
+How to serve the **`apps/vs-helper`** app on iOS. Expo Go can exercise the
+offline UI, while Cognito Apple/Google OAuth requires the EAS development build.
+For the one-time provider setup see [`deployment.md`](deployment.md).
 
 > This is a **monorepo** (npm workspaces). Dependencies are hoisted to the root
 > `node_modules`, and Metro is configured to watch the workspace root so it can
@@ -12,7 +12,8 @@ Cognito / Apple / Google setup see [`deployment.md`](deployment.md).
 ## Prerequisites
 
 - **Node.js** 18+ and npm
-- **Expo Go** app on your iPhone (App Store) — for physical-device testing
+- **Expo Go** app on your iPhone (optional, offline UI testing only)
+- **Expo account** and the EAS development build for Cognito sign-in
 - **Xcode** + iOS Simulator — for Simulator testing (macOS only)
 - Mac and iPhone on the **same Wi‑Fi network** (physical device)
 
@@ -51,7 +52,7 @@ Fill in the OIDC values from the Cognito console
 All `EXPO_PUBLIC_*` values are inlined into the bundle at build time — they are
 public, not secrets.
 
-## 3. Start the dev server
+## 3. Run the offline UI in Expo Go (optional)
 
 ```bash
 # from the repo root
@@ -67,16 +68,27 @@ Then:
 - **Physical iPhone** — open the **Camera** app, scan the QR code in the
   terminal, and open it in **Expo Go**.
 
-## 4. Register the redirect URI for sign-in
+## 4. Build the development client for sign-in
 
-Inside Expo Go the OAuth redirect is **not** `vshelper://callback` — it is an
-`exp://` URL. The app logs the resolved `redirectUri` right before it opens the
-login page; copy that exact value into the Cognito App Client's **callback URLs**.
+Expo Go cannot receive OAuth/OIDC redirects. Build and install the project's
+development client once:
 
-- Simulator: `exp://localhost:8081/--/callback`
-- Physical device: `exp://<your-mac-ip>:8081/--/callback`
+```bash
+cd apps/vs-helper
+npx eas-cli device:create
+# Select Website, open the generated link on the iPhone, and install the profile.
+npx eas-cli build --profile development --platform ios
+```
 
-Add the matching sign-out URL too, then wait a moment for Cognito to propagate.
+Install the resulting build on the iPhone, then start Metro from the repo root:
+
+```bash
+npm run vs:dev
+```
+
+In Cognito, register `vshelper://callback` as the callback URL and
+`vshelper://` as the sign-out URL. The development and production builds use the
+same custom scheme.
 
 ## Troubleshooting
 
@@ -84,12 +96,13 @@ Add the matching sign-out URL too, then wait a moment for Cognito to propagate.
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | **App stuck "loading" forever in Expo Go** | Dependencies not installed — run `npm install` from the **repo root** (not the app folder).      |
 | Metro can't resolve `@vs/auth`             | Start from the repo root so Metro watches the workspace; confirm `metro.config.js` is unchanged. |
-| Physical iPhone can't reach the dev server | Same Wi‑Fi; try `npx expo start --tunnel` if on a restricted network.                            |
+| Physical iPhone can't reach the dev server | Same Wi‑Fi; try `npm run vs:dev:tunnel` if on a restricted network.                             |
 | Env vars are `undefined` at runtime        | `.env` must be in `apps/vs-helper/`, not `packages/auth/`. Restart Metro after editing `.env`.   |
-| `redirect_uri` error on the login page     | Register the exact `exp://…/--/callback` value the app logs before `promptAsync()`.              |
+| Sign-in buttons are disabled in Expo Go    | Install the development build and start it with `npm run vs:dev`.                                |
+| `redirect_uri` error on the login page     | Cognito must allow the exact callback `vshelper://callback`.                                     |
 | Changes to `.env` not picked up            | Stop Metro and restart with a cleared cache: `npx expo start -c`.                                |
 
 ## Production build (EAS)
 
-For TestFlight / App Store builds instead of Expo Go, see
+For TestFlight / App Store builds instead of the development client, see
 [`vs-helper-app-store.md`](vs-helper-app-store.md).

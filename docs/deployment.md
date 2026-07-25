@@ -29,6 +29,13 @@ Authentication methods → Sign-up → Cognito-assisted verification → Edit �
 App integration → Domain → **Use a Cognito domain**. Note the prefix
 (e.g. `us-east-1gdcgzpb1p`).
 
+Do not infer this value from the user-pool name. The pool's OIDC discovery
+document exposes the exact hosted domain in `authorization_endpoint`:
+
+```text
+https://cognito-idp.<region>.amazonaws.com/<pool-id>/.well-known/openid-configuration
+```
+
 ## 4. Create a Managed Login branding style
 
 Branding → Managed login → create a style (defaults are fine). Required or the
@@ -158,14 +165,13 @@ App integration → App clients:
 - OAuth scopes: `openid`, `email`, `profile`
 - Enabled identity providers: **Cognito user pool**, **Google**, and
   **Sign in with Apple**
-- Callback URLs: `vshelper://callback`, `exp://localhost:8081/--/callback`,
-  `exp://<your-ip>:8081/--/callback`
-- Sign-out URLs: `vshelper://`, `exp://localhost:8081/--/callback`
+- Callback URLs: `vshelper://callback`
+- Sign-out URLs: `vshelper://`
 - Managed login pages configuration: assign the branding style from step 4
 
-> Inside Expo Go the redirect is `exp://…/--/callback`, not `vshelper://callback`.
-> The app logs the resolved `redirectUri` before `promptAsync()` — register that
-> exact value. The app sends `identity_provider=Google` or
+> Expo Go cannot test OAuth/OIDC redirects. Install the EAS development build;
+> both development and production builds use `vshelper://callback`. The app
+> sends `identity_provider=Google` or
 > `identity_provider=SignInWithApple` so each button opens the matching provider
 > directly, and `prompt=login` prevents a previous Cognito browser session from
 > silently selecting the wrong provider.
@@ -194,12 +200,18 @@ or region is set separately.
 ## 16. Run locally
 
 ```bash
-npm run ios      # iOS Simulator
-npm run android  # Android Emulator
+# Build and install this once on the device.
+cd apps/vs-helper
+npx eas-cli device:create
+npx eas-cli build --profile development --platform ios
+
+# Then start Metro for the installed development client.
+cd ../..
+npm run vs:dev
 ```
 
-On a physical device, add your machine's IP callback
-(`exp://<your-ip>:8081/--/callback`) to the App Client first.
+Expo Go can still run the offline UI with `npm run vs`, but it cannot complete
+Apple or Google OAuth redirects.
 
 ## 17. Production build (EAS)
 
@@ -250,7 +262,7 @@ eas env:create --scope project --visibility plaintext \
 | Google auth screen never appears                                   | Enable Google as an identity provider on the App Client (step 14)                    |
 | Apple shows `invalid_client`                                       | Recheck the Services ID, Team ID, Key ID, private key, and Apple return URL           |
 | Apple button opens a Cognito error                                 | Enable `SignInWithApple` on the App Client and confirm the provider is active         |
-| Save fails for callback like `expo://localhost:8081`               | Use `exp://localhost:8081/--/callback` — Expo Go uses `exp://` with `/--/`           |
+| Sign-in never returns to the app in Expo Go                        | Install the EAS development build and use `npm run vs:dev`                           |
 | "An error was encountered with the requested page"                 | `redirect_uri` not in callback URLs, or wrong `EXPO_PUBLIC_USER_POOL_CLIENT_ID`      |
 | "Login pages unavailable"                                          | Assign a Managed Login branding style (step 4)                                       |
 | "App is not verified"                                              | Add the user as a Google test user, or publish the Google consent screen              |

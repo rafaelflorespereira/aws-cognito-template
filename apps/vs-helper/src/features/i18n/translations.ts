@@ -67,6 +67,8 @@ export const translations = {
     "practice.finishShort": "Finish",
     "practice.mute": "Mute",
     "practice.unmute": "Unmute",
+    "practice.audioError":
+      "Narration could not be played. Check the media volume and try again.",
 
     "settings.setupTitle": "Set up your practice",
     "settings.title": "Settings",
@@ -101,6 +103,9 @@ export const translations = {
       "Signing in lets your sessions count across devices (optional).",
     "account.signInWithApple": "Sign in with Apple",
     "account.signInWithGoogle": "Sign in with Google",
+    "account.expoGoUnsupported":
+      "Apple and Google sign-in require the development build; Expo Go cannot receive OAuth redirects.",
+    "account.signInError": "Sign-in unavailable: {message}",
     "account.signOut": "Sign out",
     "account.reauthBanner":
       "Your session expired. Sign in again to keep syncing.",
@@ -300,6 +305,8 @@ export const translations = {
     "practice.finishShort": "Finalizar",
     "practice.mute": "Silenciar",
     "practice.unmute": "Ativar som",
+    "practice.audioError":
+      "Não foi possível reproduzir a narração. Verifique o volume de mídia e tente novamente.",
 
     "settings.setupTitle": "Configure sua prática",
     "settings.title": "Ajustes",
@@ -334,6 +341,9 @@ export const translations = {
       "Entrar permite que suas sessões contem em vários dispositivos (opcional).",
     "account.signInWithApple": "Entrar com a Apple",
     "account.signInWithGoogle": "Entrar com o Google",
+    "account.expoGoUnsupported":
+      "O login com Apple e Google exige a versão de desenvolvimento; o Expo Go não recebe redirecionamentos OAuth.",
+    "account.signInError": "Não foi possível entrar: {message}",
     "account.signOut": "Sair",
     "account.reauthBanner":
       "Sua sessão expirou. Entre novamente para continuar sincronizando.",
@@ -535,6 +545,8 @@ export const translations = {
     "practice.finishShort": "Finalizar",
     "practice.mute": "Silenciar",
     "practice.unmute": "Activar sonido",
+    "practice.audioError":
+      "No se pudo reproducir la narración. Comprueba el volumen multimedia e inténtalo de nuevo.",
 
     "settings.setupTitle": "Configura tu práctica",
     "settings.title": "Ajustes",
@@ -569,6 +581,9 @@ export const translations = {
       "Iniciar sesión permite que tus sesiones cuenten en varios dispositivos (opcional).",
     "account.signInWithApple": "Iniciar sesión con Apple",
     "account.signInWithGoogle": "Iniciar sesión con Google",
+    "account.expoGoUnsupported":
+      "El acceso con Apple y Google requiere la compilación de desarrollo; Expo Go no puede recibir redirecciones OAuth.",
+    "account.signInError": "No se pudo iniciar sesión: {message}",
     "account.signOut": "Cerrar sesión",
     "account.reauthBanner":
       "Tu sesión expiró. Inicia sesión de nuevo para seguir sincronizando.",
@@ -772,6 +787,8 @@ export const translations = {
     "practice.finishShort": "Terminer",
     "practice.mute": "Couper le son",
     "practice.unmute": "Rétablir le son",
+    "practice.audioError":
+      "Impossible de lire la narration. Vérifiez le volume multimédia et réessayez.",
 
     "settings.setupTitle": "Configurez votre pratique",
     "settings.title": "Réglages",
@@ -806,6 +823,9 @@ export const translations = {
       "Se connecter permet à vos séances de compter sur plusieurs appareils (facultatif).",
     "account.signInWithApple": "Se connecter avec Apple",
     "account.signInWithGoogle": "Se connecter avec Google",
+    "account.expoGoUnsupported":
+      "La connexion Apple et Google nécessite la version de développement ; Expo Go ne peut pas recevoir les redirections OAuth.",
+    "account.signInError": "Connexion impossible : {message}",
     "account.signOut": "Se déconnecter",
     "account.reauthBanner":
       "Votre session a expiré. Reconnectez-vous pour continuer la synchronisation.",
@@ -1014,6 +1034,8 @@ export const translations = {
     "practice.finishShort": "Termina",
     "practice.mute": "Disattiva audio",
     "practice.unmute": "Attiva audio",
+    "practice.audioError":
+      "Impossibile riprodurre la narrazione. Controlla il volume multimediale e riprova.",
 
     "settings.setupTitle": "Configura la tua pratica",
     "settings.title": "Impostazioni",
@@ -1048,6 +1070,9 @@ export const translations = {
       "Accedendo, le tue sessioni contano su più dispositivi (facoltativo).",
     "account.signInWithApple": "Accedi con Apple",
     "account.signInWithGoogle": "Accedi con Google",
+    "account.expoGoUnsupported":
+      "L'accesso con Apple e Google richiede la build di sviluppo; Expo Go non può ricevere i reindirizzamenti OAuth.",
+    "account.signInError": "Accesso non riuscito: {message}",
     "account.signOut": "Esci",
     "account.reauthBanner":
       "La sessione è scaduta. Accedi di nuovo per continuare la sincronizzazione.",

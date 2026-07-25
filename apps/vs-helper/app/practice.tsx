@@ -273,6 +273,11 @@ export default function Practice() {
       <View style={[styles.bottom, { paddingBottom: insets.bottom + 16 }]}>
         {running ? (
           <>
+            {narration.error ? (
+              <Text accessibilityLiveRegion="polite" style={styles.audioError}>
+                {t("practice.audioError")}
+              </Text>
+            ) : null}
             {guided ? (
               <>
                 <View style={styles.segments}>
@@ -454,6 +459,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     letterSpacing: 0.5,
+  },
+  audioError: {
+    color: "#fca5a5",
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
   },
   finish: {
     color: "#b6b3c9",
