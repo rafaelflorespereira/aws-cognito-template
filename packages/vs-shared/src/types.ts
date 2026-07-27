@@ -1,6 +1,9 @@
 // Types shared between the VS app (on-device) and the cloud sync backend.
 // See docs/vs-helper-architecture.md §12 for the on-device <-> cloud mapping.
 
+export const VOICE_GENDERS = ["female", "male"] as const;
+export type VoiceGender = (typeof VOICE_GENDERS)[number];
+
 export interface VSSettings {
   timesPerDay: number;
   firstTime: string; // "HH:mm"
@@ -9,6 +12,7 @@ export interface VSSettings {
   notificationsEnabled: boolean;
   showGuidedSteps: boolean;
   audioGuideEnabled: boolean; // speak each maneuver aloud during practice
+  voiceGender: VoiceGender; // narrator voice; best-effort match per device
   configured: boolean; // false until the user completes first-run onboarding
 }
 

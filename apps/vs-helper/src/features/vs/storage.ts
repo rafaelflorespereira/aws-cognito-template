@@ -24,6 +24,7 @@ export const DEFAULT_SETTINGS: VSSettings = {
   notificationsEnabled: true,
   showGuidedSteps: true,
   audioGuideEnabled: false,
+  voiceGender: "female",
   configured: false,
 };
 

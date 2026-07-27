@@ -1,6 +1,6 @@
 import type { APIGatewayProxyHandlerV2WithJWTAuthorizer } from "aws-lambda";
 import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
-import type { VSSettings } from "@vs/shared";
+import { VOICE_GENDERS, type VSSettings } from "@vs/shared";
 import { ddb, TABLES } from "../lib/ddb";
 import { requireUserId } from "../lib/auth";
 import { json } from "../lib/http";
@@ -67,6 +67,11 @@ function parseBody(body: string | undefined): SyncedSettings {
       throw new Error(`Field "${key}" must be a boolean`);
     }
   }
+  if (!VOICE_GENDERS.includes(parsed.voiceGender)) {
+    throw new Error(
+      `Field "voiceGender" must be one of: ${VOICE_GENDERS.join(", ")}`,
+    );
+  }
 
   return {
     timesPerDay: parsed.timesPerDay,
@@ -76,6 +81,7 @@ function parseBody(body: string | undefined): SyncedSettings {
     notificationsEnabled: parsed.notificationsEnabled,
     showGuidedSteps: parsed.showGuidedSteps,
     audioGuideEnabled: parsed.audioGuideEnabled,
+    voiceGender: parsed.voiceGender,
     configured: parsed.configured,
     updatedAt: parsed.updatedAt,
   };

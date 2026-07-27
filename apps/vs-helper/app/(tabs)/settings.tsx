@@ -17,11 +17,13 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { useSchedule } from "@/features/vs/useSchedule";
+import { VOICE_GENDERS, type VoiceGender } from "@vs/shared";
 import {
   useI18n,
   SUPPORTED_LANGS,
   LANG_NAMES,
   type Lang,
+  type TranslationKey,
 } from "@/features/i18n";
 
 function clamp(n: number, min: number, max: number) {
@@ -57,6 +59,7 @@ export default function Settings() {
   const [notifications, setNotifications] = useState(true);
   const [guided, setGuided] = useState(true);
   const [audioGuide, setAudioGuide] = useState(false);
+  const [voiceGender, setVoiceGender] = useState<VoiceGender>("female");
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -69,6 +72,7 @@ export default function Settings() {
     setNotifications(settings.notificationsEnabled);
     setGuided(settings.showGuidedSteps);
     setAudioGuide(settings.audioGuideEnabled);
+    setVoiceGender(settings.voiceGender);
     setHydrated(true);
   }, [loading, hydrated, settings]);
 
@@ -81,6 +85,7 @@ export default function Settings() {
       notificationsEnabled: notifications,
       showGuidedSteps: guided,
       audioGuideEnabled: audioGuide,
+      voiceGender,
       configured: true,
     });
     router.replace("/");
@@ -202,6 +207,30 @@ export default function Settings() {
         <Text style={styles.switchLabel}>{t("settings.audioGuide")}</Text>
         <Switch value={audioGuide} onValueChange={setAudioGuide} />
       </View>
+
+      {audioGuide ? (
+        <Field label={t("settings.voiceGender")}>
+          <View style={styles.langRow}>
+            {VOICE_GENDERS.map((g) => (
+              <TouchableOpacity
+                key={g}
+                style={[styles.langChip, voiceGender === g && styles.langChipOn]}
+                onPress={() => setVoiceGender(g)}
+                activeOpacity={0.8}
+              >
+                <Text
+                  style={[
+                    styles.langChipText,
+                    voiceGender === g && styles.langChipTextOn,
+                  ]}
+                >
+                  {t(`settings.voiceGender.${g}` as TranslationKey)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Field>
+      ) : null}
 
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
         <Text style={styles.saveText}>
