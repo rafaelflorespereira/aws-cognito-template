@@ -1,7 +1,7 @@
 // Types shared between the VS app (on-device) and the cloud sync backend.
 // See docs/vs-helper-architecture.md §12 for the on-device <-> cloud mapping.
 
-export const VOICE_GENDERS = ["female", "male"] as const;
+export const VOICE_GENDERS = ["female"] as const;
 export type VoiceGender = (typeof VOICE_GENDERS)[number];
 
 export interface VSSettings {
