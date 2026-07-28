@@ -69,6 +69,8 @@ function mapStatusToCode(status: number): SyncErrorCode {
 }
 
 function logSyncError(error: SyncError): void {
+  if (error.code === "signed_out" || error.code === "unconfigured") return;
+
   const status = error.status ? ` ${error.status}` : "";
   const details = error.details ? ` ${error.details}` : "";
   console.error(
@@ -207,18 +209,15 @@ async function authedRequest(
   }
 }
 
-async function pullSettings(): Promise<SyncedSettings | null> {
+async function pullSettings(): Promise<SyncResult<SyncedSettings | null>> {
   const req = await authedRequest("/settings");
   if (req.error) {
-    logSyncError(req.error);
-    return null;
+    if (req.error.code === "not_found") return { data: null, error: null };
+    return { data: null, error: req.error };
   }
   const parsed = await parseJson<SyncedSettings>(req.data, "GET", "/settings");
-  if (parsed.error) {
-    logSyncError(parsed.error);
-    return null;
-  }
-  return parsed.data;
+  if (parsed.error) return { data: null, error: parsed.error };
+  return { data: parsed.data, error: null };
 }
 
 export async function pushSettings(
@@ -412,12 +411,18 @@ export async function syncSessionHistoryNow(): Promise<void> {
  */
 export async function syncSettingsNow(): Promise<VSSettings | null> {
   try {
-    const [remote, local, localUpdatedAt] = await Promise.all([
+    const [remoteResult, local, localUpdatedAt] = await Promise.all([
       pullSettings(),
       loadSettings(),
       loadSettingsUpdatedAt(),
     ]);
 
+    if (remoteResult.error) {
+      logSyncError(remoteResult.error);
+      return null;
+    }
+
+    const remote = remoteResult.data;
     if (remote && (!localUpdatedAt || remote.updatedAt > localUpdatedAt)) {
       const { updatedAt, ...remoteSettings } = remote;
       await saveSettings(remoteSettings, updatedAt);
