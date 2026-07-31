@@ -14,6 +14,10 @@ const KEYS = {
   reports: "vs.reports",
   history: "vs.history",
   achievements: "vs.achievements",
+  // The email of the last signed-in user; used to detect account switches so
+  // local data can be cleared before syncing a different user's data from the
+  // server (see account.tsx handleSignIn).
+  currentUserId: "vs.currentUserId",
 };
 
 export const DEFAULT_SETTINGS: VSSettings = {
@@ -154,4 +158,31 @@ export async function loadAchievements(): Promise<Achievement[]> {
 
 export async function saveAchievements(achievements: Achievement[]): Promise<void> {
   await AsyncStorage.setItem(KEYS.achievements, JSON.stringify(achievements));
+}
+
+/** Returns the email of the user whose data is currently stored locally. */
+export async function loadCurrentUserId(): Promise<string | null> {
+  return AsyncStorage.getItem(KEYS.currentUserId);
+}
+
+/** Persists the email of the signed-in user so account switches can be detected. */
+export async function saveCurrentUserId(email: string): Promise<void> {
+  await AsyncStorage.setItem(KEYS.currentUserId, email);
+}
+
+/**
+ * Wipes all user-specific local data (history, progress, settings, reports,
+ * achievements). Call this before syncing when a different account signs in so
+ * the previous user's data doesn't contaminate the new session.
+ */
+export async function clearUserData(): Promise<void> {
+  await AsyncStorage.multiRemove([
+    KEYS.settings,
+    KEYS.settingsUpdatedAt,
+    KEYS.progress,
+    KEYS.reports,
+    KEYS.history,
+    KEYS.achievements,
+    KEYS.currentUserId,
+  ]);
 }

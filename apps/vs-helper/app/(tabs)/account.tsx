@@ -34,6 +34,11 @@ import {
   syncSettingsNow,
   useNeedsReauth,
 } from "@/features/vs/sync";
+import {
+  clearUserData,
+  loadCurrentUserId,
+  saveCurrentUserId,
+} from "@/features/vs/storage";
 import { useLeaderboard } from "@/features/vs/useLeaderboard";
 
 const HANDLE_RE = /^[A-Za-z0-9_]{3,20}$/;
@@ -191,7 +196,19 @@ export default function Account() {
         code,
         request.codeVerifier,
       );
-      setUser(parseIdToken(tokens.idToken));
+      const newUser = parseIdToken(tokens.idToken);
+      setUser(newUser);
+
+      // Detect account switch: if the email differs from the last signed-in
+      // user, wipe local data first so the previous user's history/progress
+      // doesn't bleed into this session. The subsequent sync then repopulates
+      // from the server using this user's records only.
+      const prevUserId = await loadCurrentUserId();
+      if (prevUserId && prevUserId !== newUser.email) {
+        await clearUserData();
+      }
+      await saveCurrentUserId(newUser.email);
+
       // Pull/push settings now that we have a token; other screens' own
       // useSchedule() picks up the merged result on their next focus.
       void syncSettingsNow();
