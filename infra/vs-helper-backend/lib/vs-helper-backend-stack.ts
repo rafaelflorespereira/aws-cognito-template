@@ -47,6 +47,15 @@ export class VsHelperBackendStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
+    // Post-session reflections (chakras/wellbeing/perceptions/notes) — opt-in
+    // only, see VSSettings.reportSyncOptIn (docs/vs-helper-architecture.md §12.2).
+    const reportsTable = new dynamodb.Table(this, "ReportsTable", {
+      partitionKey: { name: "userId", type: dynamodb.AttributeType.STRING },
+      sortKey: { name: "sk", type: dynamodb.AttributeType.STRING },
+      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+    });
+
     // Phase 3 (docs/vs-helper-architecture.md §11): opted-in users are indexed
     // by this GSI so the leaderboard is a single query, sorted by totalSessions
     // descending. Rows without gsi1pk (the default) never appear in the index.
@@ -93,6 +102,7 @@ export class VsHelperBackendStack extends cdk.Stack {
       USERS_TABLE_NAME: usersTable.tableName,
       GROUPS_TABLE_NAME: groupsTable.tableName,
       GROUP_MEMBERS_TABLE_NAME: groupMembersTable.tableName,
+      REPORTS_TABLE_NAME: reportsTable.tableName,
     };
 
     const commonProps: Partial<lambdaNode.NodejsFunctionProps> = {
@@ -124,6 +134,8 @@ export class VsHelperBackendStack extends cdk.Stack {
     const leaveGroupFn = fn("LeaveGroupFn");
     const getGroupsFn = fn("GetGroupsFn");
     const getGroupLeaderboardFn = fn("GetGroupLeaderboardFn");
+    const getReportsFn = fn("GetReportsFn");
+    const postReportFn = fn("PostReportFn");
 
     settingsTable.grantReadData(getSettingsFn);
     settingsTable.grantReadWriteData(putSettingsFn);
@@ -152,6 +164,9 @@ export class VsHelperBackendStack extends cdk.Stack {
 
     groupMembersTable.grantReadData(getGroupLeaderboardFn);
     statsTable.grantReadData(getGroupLeaderboardFn);
+
+    reportsTable.grantReadData(getReportsFn);
+    reportsTable.grantReadWriteData(postReportFn);
 
     // The RN app already holds a Cognito ID token (packages/auth); this
     // authorizer verifies it directly — no separate Lambda authorizer needed.
@@ -255,6 +270,18 @@ export class VsHelperBackendStack extends cdk.Stack {
         "GetGroupLeaderboardInt",
         getGroupLeaderboardFn,
       ),
+      authorizer,
+    });
+    httpApi.addRoutes({
+      path: "/reports",
+      methods: [apigwv2.HttpMethod.GET],
+      integration: new HttpLambdaIntegration("GetReportsInt", getReportsFn),
+      authorizer,
+    });
+    httpApi.addRoutes({
+      path: "/reports",
+      methods: [apigwv2.HttpMethod.POST],
+      integration: new HttpLambdaIntegration("PostReportInt", postReportFn),
       authorizer,
     });
 

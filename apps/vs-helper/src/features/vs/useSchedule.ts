@@ -25,8 +25,10 @@ import {
 } from "./schedule";
 import { rescheduleAll, cancelAll, requestPermission } from "./notifications";
 import {
+  pushReport,
   pushSession,
   pushSettings,
+  syncReportsNow,
   syncSessionHistoryNow,
   syncSettingsNow,
 } from "./sync";
@@ -82,7 +84,11 @@ export function useSchedule(): UseSchedule {
   // (no-op if signed out or sync isn't configured — see features/vs/sync.ts).
   useEffect(() => {
     if (loading) return;
-    Promise.all([syncSettingsNow(), syncSessionHistoryNow()]).then(([applied]) => {
+    Promise.all([
+      syncSettingsNow(),
+      syncSessionHistoryNow(),
+      syncReportsNow(),
+    ]).then(([applied]) => {
       if (applied) setSettings(applied);
       void refresh();
     });
@@ -177,7 +183,10 @@ export function useSchedule(): UseSchedule {
         completedAt: completedAt.toISOString(),
       };
       await appendSessionRecord(record);
-      if (opts?.report) await saveReport(opts.report);
+      if (opts?.report) {
+        await saveReport(opts.report);
+        void pushReport(opts.report);
+      }
       void pushSession(record, settings.timesPerDay);
       return slot;
     },

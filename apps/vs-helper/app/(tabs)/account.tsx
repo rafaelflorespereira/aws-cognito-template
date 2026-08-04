@@ -30,6 +30,7 @@ import {
 } from "@vs/auth";
 import { useI18n } from "@/features/i18n";
 import {
+  syncReportsNow,
   syncSessionHistoryNow,
   syncSettingsNow,
   useNeedsReauth,
@@ -213,6 +214,7 @@ export default function Account() {
       // useSchedule() picks up the merged result on their next focus.
       void syncSettingsNow();
       void syncSessionHistoryNow();
+      void syncReportsNow();
       void refreshLeaderboard();
     } catch (err) {
       console.error(`[auth] ${provider} sign-in failed:`, err);

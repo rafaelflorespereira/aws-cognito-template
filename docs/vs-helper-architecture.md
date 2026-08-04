@@ -187,6 +187,8 @@ An optional post-session reflection shown after a session completes. Designed to
 - **Session duration** (default 2 minutes; user-adjustable).
 - Toggle: **enable notifications**.
 - Toggle: **show guided steps** on the practice screen.
+- Toggle: **sync reports to the cloud** (`reportSyncOptIn`, off by default) —
+  see §12.2 Reports table; sensitive, opt-in only.
 - Save → recompute schedule + reschedule notifications.
 
 ### 4.5 Stats & achievements screen (`stats.tsx`)
@@ -247,6 +249,7 @@ export interface VSSettings {
   notificationsEnabled: boolean;
   showGuidedSteps: boolean;
   audioGuideEnabled: boolean; // speak each maneuver aloud during practice (§4.2)
+  reportSyncOptIn: boolean; // sync Reports to the cloud; off by default (§12.2)
   configured: boolean; // false until the user completes first-run onboarding
 }
 
@@ -500,7 +503,7 @@ development build for local OAuth testing; Expo Go cannot receive the redirect.
 | Phase | Deliverable                                                                      | Status |
 | ----- | --------------------------------------------------------------------------------- | ------ |
 | 1     | On-device MVP: settings, schedule, notifications, practice, report, gamification | Done |
-| 2     | Cloud sync of settings/sessions/stats (Cognito identity + API); richer statistics | Settings + Sessions + Stats sync shipped — see [`vs-helper-backend.md`](vs-helper-backend.md). Reports/achievements sync and richer statistics still open |
+| 2     | Cloud sync of settings/sessions/stats (Cognito identity + API); richer statistics | Settings + Sessions + Stats sync shipped — see [`vs-helper-backend.md`](vs-helper-backend.md). Reports sync shipped (opt-in, §12.2). Achievements sync and richer statistics still open |
 | 3     | Global **leaderboard**; situational reminders (the 20 situations); **championship groups**; **audio guide** for the practice screen (§4.2) | Leaderboard, championship groups, and the audio guide all shipped — see [`vs-helper-backend.md`](vs-helper-backend.md) and §11a below. Situational reminders not started |
 
 ## 11. Leaderboard (scores window)
@@ -563,9 +566,10 @@ Phase 1 keeps everything on-device (AsyncStorage). **Phase 2** adds a backend
 users sync to, authorized by the Cognito ID token. Every record is owned by the
 user's Cognito `sub` (`userId`), and requests are scoped to that `sub` so a
 user can only touch their own partition. **Shipped so far**: `UserSettings`,
-`Sessions`/`Stats`, and `Users` (§12.2 below, leaderboard opt-in fields only —
-see [`vs-helper-backend.md`](vs-helper-backend.md) for the deployed API).
-`Reports` and `UserAchievements` tables described below are **not yet built**.
+`Sessions`/`Stats`, `Users` (§12.2 below, leaderboard opt-in fields only), and
+`Reports` (opt-in, gated by `VSSettings.reportSyncOptIn`) — see
+[`vs-helper-backend.md`](vs-helper-backend.md) for the deployed API.
+`UserAchievements` described below is **not yet built**.
 
 ### 12.1 Entity overview
 
@@ -621,19 +625,23 @@ tables partition by `userId`; time-series tables add a sort key (`sk`).
 | `completedAt` | string | ISO — idempotency key  |
 
 **Reports** — post-session reflection, **opt-in** (`PK: userId`,
-`SK: "REPORT#<completedAt>"`)
+`SK: "REPORT#<completedAt>"`) — **shipped**
 
 | Attribute        | Type       | Notes               |
 | ---------------- | ---------- | ------------------- |
+| `completedAt`    | string     | ISO — idempotency key |
 | `slot`           | string     | `"HH:mm"`           |
-| `chakrasActive`  | string set | chakra ids          |
-| `chakrasBlocked` | string set | chakra ids          |
+| `chakrasActive`  | string list| chakra ids          |
+| `chakrasBlocked` | string list| chakra ids          |
 | `wellbeing`      | number     | 1..5                |
-| `perceptions`    | string set | tingling, warmth, … |
+| `perceptions`    | string list| tingling, warmth, … |
 | `notes`          | string     | optional free text  |
 
-> Reports are sensitive; by default they stay **on-device**. This table exists
-> only if the user opts into full report sync.
+> Reports are sensitive; by default they stay **on-device**. Sync only
+> happens once the user flips **`VSSettings.reportSyncOptIn`** on in Settings
+> (§4.4) — `POST /reports` (idempotent on `completedAt`, same pattern as
+> `POST /sessions`) and `GET /reports` are gated by nothing beyond auth, but
+> the app only ever calls them when that setting is on.
 
 **DailyProgress** — per-day rollup (`PK: userId`, `SK: "DAY#<date>"`)
 
@@ -676,8 +684,8 @@ is true, so signed-out or private users never appear. Reads project only
   Sessions, `vs.reports` → Reports (opt-in), `vs.progress` → DailyProgress, computed
   `LifetimeStats` → Stats, achievements → UserAchievements.
 - **Sync strategy**: last-write-wins on settings (`updatedAt`); append-only,
-  idempotent writes for Sessions (keyed by `completedAt`); Stats recomputed after
-  each sync.
+  idempotent writes for Sessions and Reports (both keyed by `completedAt`);
+  Stats recomputed after each sync.
 - **Single-table option**: the same access patterns fit one table with a
   composite `PK = USER#<userId>` and `SK` per entity type (`SETTINGS`, `STATS`,
   `SESSION#<ts>`, …) plus the `GSI1` for the leaderboard.

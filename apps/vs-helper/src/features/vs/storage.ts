@@ -29,6 +29,7 @@ export const DEFAULT_SETTINGS: VSSettings = {
   showGuidedSteps: true,
   audioGuideEnabled: false,
   voiceGender: "female",
+  reportSyncOptIn: false,
   configured: false,
 };
 
@@ -110,6 +111,10 @@ export async function saveReport(r: SessionReport): Promise<void> {
 
 export async function loadReports(): Promise<SessionReport[]> {
   return readJSON<SessionReport[]>(KEYS.reports, []);
+}
+
+export async function saveReports(reports: SessionReport[]): Promise<void> {
+  await AsyncStorage.setItem(KEYS.reports, JSON.stringify(reports));
 }
 
 export async function appendSessionRecord(r: SessionRecord): Promise<void> {

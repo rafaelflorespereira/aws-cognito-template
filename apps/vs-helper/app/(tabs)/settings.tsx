@@ -57,10 +57,16 @@ export default function Settings() {
   const [notifications, setNotifications] = useState(true);
   const [guided, setGuided] = useState(true);
   const [audioGuide, setAudioGuide] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
+  const [reportSync, setReportSync] = useState(false);
+  // Tracks whether the user has touched any field yet. While clean, the form
+  // keeps mirroring `settings` so a background cloud sync that lands after
+  // mount (features/vs/sync.ts syncSettingsNow) is reflected here too —
+  // otherwise a save made before that sync resolves would silently push the
+  // stale, pre-sync values back to the server and clobber the real ones.
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
-    if (loading || hydrated) return;
+    if (loading || dirty) return;
     setTimesPerDay(String(settings.timesPerDay));
     setFirstTime(timeStrToDate(settings.firstTime));
     setLastTime(timeStrToDate(settings.lastTime));
@@ -69,8 +75,8 @@ export default function Settings() {
     setNotifications(settings.notificationsEnabled);
     setGuided(settings.showGuidedSteps);
     setAudioGuide(settings.audioGuideEnabled);
-    setHydrated(true);
-  }, [loading, hydrated, settings]);
+    setReportSync(settings.reportSyncOptIn);
+  }, [loading, dirty, settings]);
 
   async function handleSave() {
     await updateSettings({
@@ -82,21 +88,26 @@ export default function Settings() {
       showGuidedSteps: guided,
       audioGuideEnabled: audioGuide,
       voiceGender: "female",
+      reportSyncOptIn: reportSync,
       configured: true,
     });
+    setDirty(false);
     router.replace("/");
   }
 
   function bumpTimesPerDay(delta: number) {
+    setDirty(true);
     const n = parseInt(timesPerDay, 10) || 0;
     setTimesPerDay(String(clamp(n + delta, 1, 99)));
   }
 
   function bumpDurationMin(delta: number) {
+    setDirty(true);
     setDurationMin((v) => clamp(v + delta, 0, 59));
   }
 
   function bumpDurationSec(delta: number) {
+    setDirty(true);
     setDurationSec((v) => clamp(v + delta, 0, 59));
   }
 
@@ -146,7 +157,10 @@ export default function Settings() {
           <TextInput
             style={styles.stepperInput}
             value={timesPerDay}
-            onChangeText={(txt) => setTimesPerDay(txt.replace(/[^0-9]/g, ""))}
+            onChangeText={(txt) => {
+              setDirty(true);
+              setTimesPerDay(txt.replace(/[^0-9]/g, ""));
+            }}
             keyboardType="number-pad"
             textAlign="center"
           />
@@ -163,13 +177,19 @@ export default function Settings() {
       <TimeField
         label={t("settings.firstTime")}
         value={firstTime}
-        onChange={setFirstTime}
+        onChange={(d) => {
+          setDirty(true);
+          setFirstTime(d);
+        }}
       />
 
       <TimeField
         label={t("settings.lastTime")}
         value={lastTime}
-        onChange={setLastTime}
+        onChange={(d) => {
+          setDirty(true);
+          setLastTime(d);
+        }}
       />
 
       <Field label={t("settings.duration")}>
@@ -191,19 +211,48 @@ export default function Settings() {
 
       <View style={styles.switchRow}>
         <Text style={styles.switchLabel}>{t("settings.notifications")}</Text>
-        <Switch value={notifications} onValueChange={setNotifications} />
+        <Switch
+          value={notifications}
+          onValueChange={(v) => {
+            setDirty(true);
+            setNotifications(v);
+          }}
+        />
       </View>
 
       <View style={styles.switchRow}>
         <Text style={styles.switchLabel}>{t("settings.guidedSteps")}</Text>
-        <Switch value={guided} onValueChange={setGuided} />
+        <Switch
+          value={guided}
+          onValueChange={(v) => {
+            setDirty(true);
+            setGuided(v);
+          }}
+        />
       </View>
 
       <View style={styles.switchRow}>
         <Text style={styles.switchLabel}>{t("settings.audioGuide")}</Text>
-        <Switch value={audioGuide} onValueChange={setAudioGuide} />
+        <Switch
+          value={audioGuide}
+          onValueChange={(v) => {
+            setDirty(true);
+            setAudioGuide(v);
+          }}
+        />
       </View>
 
+      <View style={styles.switchRow}>
+        <Text style={styles.switchLabel}>{t("settings.reportSync")}</Text>
+        <Switch
+          value={reportSync}
+          onValueChange={(v) => {
+            setDirty(true);
+            setReportSync(v);
+          }}
+        />
+      </View>
+      <Text style={styles.hint}>{t("settings.reportSyncHint")}</Text>
 
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
         <Text style={styles.saveText}>
@@ -368,6 +417,12 @@ const styles = StyleSheet.create({
     paddingRight: 12,
     fontSize: 15,
     color: "#334155",
+  },
+  hint: {
+    marginTop: -8,
+    fontSize: 12,
+    color: "#94a3b8",
+    lineHeight: 16,
   },
   langRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   langChip: {

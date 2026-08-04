@@ -11,4 +11,5 @@ export const TABLES = {
   users: process.env.USERS_TABLE_NAME!,
   groups: process.env.GROUPS_TABLE_NAME!,
   groupMembers: process.env.GROUP_MEMBERS_TABLE_NAME!,
+  reports: process.env.REPORTS_TABLE_NAME!,
 };

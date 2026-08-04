@@ -4,17 +4,17 @@ Deployment guide for the sync API described in
 [`vs-helper-architecture.md`](vs-helper-architecture.md) §12. Lives at
 `infra/vs-helper-backend` as an AWS CDK (TypeScript) app.
 
-**Scope**: Settings, Sessions and Stats sync (Phase 2), plus the opt-in
-**leaderboard** and **championship groups** (Phase 3, §11/§11a). Reports and
-achievement unlocks stay on-device (sensitive/opt-in); situational reminders
-are not built.
+**Scope**: Settings, Sessions and Stats sync (Phase 2), Reports sync
+(opt-in), plus the opt-in **leaderboard** and **championship groups**
+(Phase 3, §11/§11a). Achievement unlocks stay on-device; situational
+reminders are not built.
 
 ## What it deploys
 
 - **DynamoDB** — `SettingsTable`, `SessionsTable`, `StatsTable`, `UsersTable`,
-  `GroupsTable`, `GroupMembersTable` (all pay-per-request, partitioned by
-  `userId` = the Cognito `sub`, except `Groups*` which partition by
-  `groupId`). Tables are created with `RemovalPolicy.RETAIN`, so
+  `GroupsTable`, `GroupMembersTable`, `ReportsTable` (all pay-per-request,
+  partitioned by `userId` = the Cognito `sub`, except `Groups*` which
+  partition by `groupId`). Tables are created with `RemovalPolicy.RETAIN`, so
   `cdk destroy` never deletes user data. `StatsTable` has a `gsi1` GSI
   (`gsi1pk`/`gsi1sk`) that only opted-in users are indexed on — that's the
   global leaderboard. `GroupMembersTable` has a `byUser` GSI for listing a
@@ -42,6 +42,8 @@ are not built.
 | POST   | `/groups/{groupId}/join`      | Join a group by its invite code; requires a handle     |
 | POST   | `/groups/{groupId}/leave`     | Leave a group                                           |
 | GET    | `/groups/{groupId}/leaderboard` | Members ranked by `totalSessions` (caller must be a member) |
+| GET    | `/reports`                    | Fetch the caller's synced `SessionReport[]` (opt-in)   |
+| POST   | `/reports`                    | Append one `SessionReport`, idempotent on `completedAt` (opt-in) |
 
 `POST /sessions` is idempotent on `completedAt` (a conditional put rejects
 duplicates from client retries) and recomputes `LifetimeStats` from the full
@@ -114,6 +116,13 @@ curl -i https://<api-id>.execute-api.<region>.amazonaws.com/stats \
   `syncSessionHistoryNow()` pulls the server history and merges by
   `completedAt`, then rewrites local history/progress so dashboards and streaks
   reflect the latest state across devices.
+- **Reports** — opt-in via `VSSettings.reportSyncOptIn` (Settings screen,
+  off by default — reports carry chakras/wellbeing/notes). When on,
+  `useSchedule.completeCurrent()` pushes a saved report the same way as
+  sessions, and `syncReportsNow()` (run alongside the settings/sessions
+  reconcile on launch) pushes anything not-yet-synced and merges the
+  server's copy in by `completedAt`. Turning the toggle off just stops future
+  syncs; it does not delete what's already on the server.
 - **Leaderboard** — `app/(tabs)/leaderboard.tsx` (via
   `useLeaderboard()`) pulls the caller's profile and the top-50 entries on
   focus, and pushes handle/opt-in edits through `pushProfile()`. Unlike
@@ -126,7 +135,7 @@ curl -i https://<api-id>.execute-api.<region>.amazonaws.com/stats \
 
 ## Not done yet
 
-- **Reports & UserAchievements sync** — deferred; still on-device only.
+- **UserAchievements sync** — deferred; still on-device only.
 - **Situational reminders** (rest of Phase 3, §10) — not started.
 - **Group admin actions** — no kicking members or deleting a group; the
   owner leaving a group just removes their own membership like anyone else.

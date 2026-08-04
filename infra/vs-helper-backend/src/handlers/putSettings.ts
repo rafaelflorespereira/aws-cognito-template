@@ -49,6 +49,7 @@ function parseBody(body: string | undefined): SyncedSettings {
     "notificationsEnabled",
     "showGuidedSteps",
     "audioGuideEnabled",
+    "reportSyncOptIn",
     "configured",
   ] as const;
 
@@ -82,6 +83,7 @@ function parseBody(body: string | undefined): SyncedSettings {
     showGuidedSteps: parsed.showGuidedSteps,
     audioGuideEnabled: parsed.audioGuideEnabled,
     voiceGender: parsed.voiceGender,
+    reportSyncOptIn: parsed.reportSyncOptIn,
     configured: parsed.configured,
     updatedAt: parsed.updatedAt,
   };

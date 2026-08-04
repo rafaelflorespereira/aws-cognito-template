@@ -5,15 +5,18 @@ import type {
   LeaderboardEntry,
   LifetimeStats,
   SessionRecord,
+  SessionReport,
   UserProfile,
   VSSettings,
 } from "@vs/shared";
 import {
   buildTodayProgressFromHistory,
   loadHistory,
+  loadReports,
   loadSettings,
   loadSettingsUpdatedAt,
   saveHistory,
+  saveReports,
   saveSettings,
   saveTodayProgress,
 } from "./storage";
@@ -255,6 +258,33 @@ export async function pushSession(
   return parsed.data?.stats ?? null;
 }
 
+// Self-gated on `VSSettings.reportSyncOptIn` (off by default), same as
+// syncReportsNow, so callers can push a just-saved report unconditionally —
+// reports are sensitive and stay on-device unless the user opted in
+// (docs/vs-helper-architecture.md §12.2).
+export async function pushReport(report: SessionReport): Promise<void> {
+  const settings = await loadSettings();
+  if (!settings.reportSyncOptIn) return;
+
+  const req = await authedRequest("/reports", {
+    method: "POST",
+    body: JSON.stringify(report),
+  });
+  if (req.error) logSyncError(req.error);
+}
+
+export async function fetchReportsResult(): Promise<SyncResult<SessionReport[]>> {
+  const req = await authedRequest("/reports");
+  if (req.error) return { data: null, error: req.error };
+  const parsed = await parseJson<{ reports?: SessionReport[] }>(
+    req.data,
+    "GET",
+    "/reports",
+  );
+  if (parsed.error) return { data: null, error: parsed.error };
+  return { data: parsed.data?.reports ?? [], error: null };
+}
+
 export async function pullProfileResult(): Promise<SyncResult<UserProfile | null>> {
   const req = await authedRequest("/profile");
   if (req.error) {
@@ -401,6 +431,49 @@ export async function syncSessionHistoryNow(): Promise<void> {
   const merged = mergeSessionHistory(local, remote.data);
   await saveHistory(merged);
   await saveTodayProgress(buildTodayProgressFromHistory(merged));
+}
+
+function mergeReports(
+  local: SessionReport[],
+  remote: SessionReport[],
+): SessionReport[] {
+  const byCompletedAt = new Map<string, SessionReport>();
+  for (const r of [...local, ...remote]) {
+    byCompletedAt.set(r.completedAt, r);
+  }
+  return Array.from(byCompletedAt.values()).sort((a, b) =>
+    a.completedAt.localeCompare(b.completedAt),
+  );
+}
+
+/**
+ * Pushes any not-yet-synced local reports and pulls the server's copy,
+ * merging by `completedAt`. Self-gated on `VSSettings.reportSyncOptIn` (off
+ * by default) so callers can invoke it unconditionally — reports are
+ * sensitive and stay on-device unless the user opted in
+ * (docs/vs-helper-architecture.md §12.2).
+ */
+export async function syncReportsNow(): Promise<void> {
+  const settings = await loadSettings();
+  if (!settings.reportSyncOptIn) return;
+
+  const local = await loadReports();
+  const remote = await fetchReportsResult();
+  if (remote.error) {
+    if (remote.error.code !== "signed_out" && remote.error.code !== "unconfigured") {
+      logSyncError(remote.error);
+    }
+    return;
+  }
+
+  const remoteCompletedAt = new Set(remote.data.map((r) => r.completedAt));
+  const notYetSynced = local.filter((r) => !remoteCompletedAt.has(r.completedAt));
+  for (const report of notYetSynced) {
+    await pushReport(report);
+  }
+
+  const merged = mergeReports(local, remote.data);
+  await saveReports(merged);
 }
 
 /**
