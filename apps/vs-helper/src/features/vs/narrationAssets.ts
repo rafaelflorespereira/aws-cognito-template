@@ -42,6 +42,14 @@ const MANEUVER_NARRATION = {
     5: require("../../../assets/audio/maneuvers/it/5.mp3"),
     6: require("../../../assets/audio/maneuvers/it/6.mp3"),
   },
+  ro: {
+    1: require("../../../assets/audio/maneuvers/ro/1.mp3"),
+    2: require("../../../assets/audio/maneuvers/ro/2.mp3"),
+    3: require("../../../assets/audio/maneuvers/ro/3.mp3"),
+    4: require("../../../assets/audio/maneuvers/ro/4.mp3"),
+    5: require("../../../assets/audio/maneuvers/ro/5.mp3"),
+    6: require("../../../assets/audio/maneuvers/ro/6.mp3"),
+  },
 } satisfies Record<Lang, Record<ManeuverNumber, number>>;
 
 export function getManeuverNarration(

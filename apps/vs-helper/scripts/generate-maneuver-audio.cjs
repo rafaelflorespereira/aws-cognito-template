@@ -48,7 +48,7 @@ loadLocalEnv();
 const MODEL = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
 const VOICE = process.env.OPENAI_TTS_VOICE || "marin";
 const FORMAT = "mp3";
-const INSTRUCTION_VERSION = 2;
+const INSTRUCTION_VERSION = 3;
 const MANEUVER_NUMBERS = [1, 2, 3, 4, 5, 6];
 const LANGUAGE_NAMES = {
   en: "English",
@@ -56,6 +56,7 @@ const LANGUAGE_NAMES = {
   es: "Spanish",
   fr: "French",
   it: "Italian",
+  ro: "Romanian",
 };
 
 const args = new Set(process.argv.slice(2));
@@ -83,10 +84,11 @@ function instructionFor(lang) {
 
   return [
     `Speak in ${language} with native pronunciation.`,
-    "Use a soft, smooth, deeply relaxing meditation-guide tone.",
-    "Speak at an unhurried, even pace with gentle warmth, low energy, and rounded intonation.",
-    "Leave comfortable pauses between sentences while keeping each instruction fluid.",
-    "Avoid urgency, upbeat inflection, dramatic emphasis, harsh delivery, whispering, or audible breaths.",
+    "Voice character: a calm adult woman with a soft, warm, low-to-mid pitch, deeply relaxing meditation-guide voice.",
+    "Treat the entire passage as ONE single continuous recording take, as if it were one uninterrupted sentence: hold the exact same pitch, pace, volume, breathiness, and vocal energy from the very first word to the very last word. Never raise or lower your pitch, never speed up or slow down, and never reset or restart your tone at the start of a new sentence — every sentence must sound like it was recorded in the same breath, by the same delivery, as the one before it.",
+    "Speak at an unhurried, even pace with gentle warmth and rounded intonation, identical across every sentence.",
+    "Only a brief, natural breathing pause between sentences is allowed — the pause itself must not cause any shift in pitch, tone, energy, or vocal register when speech resumes.",
+    "Avoid urgency, upbeat inflection, dramatic emphasis, harsh delivery, whispering, audible breaths, or any mid-recording variation in tone or pitch.",
     "Do not paraphrase or add introductory words; read every supplied word exactly once.",
   ].join(" ");
 }
@@ -153,29 +155,21 @@ function buildClips(supportedLangs, translations) {
   );
 }
 
-function currentGeneration() {
-  const instructions = Object.fromEntries(
-    Object.keys(LANGUAGE_NAMES).map((lang) => [lang, instructionFor(lang)]),
-  );
-  const generationHash = sha256(
+// Scoped to a single language, so adding/editing one language never changes
+// the expected hash — and therefore never forces regeneration — of any
+// other language's clips.
+function generationHashFor(lang) {
+  return sha256(
     JSON.stringify({
       provider: "openai",
       model: MODEL,
       voice: VOICE,
       format: FORMAT,
       instructionVersion: INSTRUCTION_VERSION,
-      instructions,
+      lang,
+      instructions: instructionFor(lang),
     }),
   );
-
-  return {
-    provider: "openai",
-    model: MODEL,
-    voice: VOICE,
-    format: FORMAT,
-    instructionVersion: INSTRUCTION_VERSION,
-    generationHash,
-  };
 }
 
 async function readManifest() {
@@ -240,23 +234,11 @@ async function isValidMp3(filePath) {
   }
 }
 
-async function checkAssets(manifest, clips, expectedGeneration) {
+async function checkAssets(manifest, clips) {
   const failures = [];
 
   if (!manifest) {
     failures.push("generation manifest is missing");
-  } else {
-    if (manifest.pendingGeneration) {
-      failures.push("a narration generation run did not complete");
-    }
-    if (!manifest.generationHash) {
-      failures.push("manifest generation hash is missing");
-    }
-    if (manifest.generationHash !== expectedGeneration.generationHash) {
-      failures.push(
-        `generation settings changed; regenerate with ${expectedGeneration.model}/${expectedGeneration.voice}`,
-      );
-    }
   }
 
   for (const clip of clips) {
@@ -268,8 +250,10 @@ async function checkAssets(manifest, clips, expectedGeneration) {
     if (entry.textSha256 !== clip.textSha256) {
       failures.push(`${clip.key}: source text changed; regenerate this clip`);
     }
-    if (entry.generationHash !== manifest.generationHash) {
-      failures.push(`${clip.key}: clip was generated with different settings`);
+    if (entry.generationHash !== generationHashFor(clip.lang)) {
+      failures.push(
+        `${clip.key}: clip was generated with different settings; regenerate with ${MODEL}/${VOICE}`,
+      );
     }
     if (!(await isValidMp3(clip.outputFile))) {
       failures.push(`${clip.key}: MP3 file is missing or invalid`);
@@ -356,23 +340,15 @@ async function synthesizeClip(apiKey, clip) {
 async function main() {
   const { SUPPORTED_LANGS, translations } = loadTranslations();
   const clips = buildClips(SUPPORTED_LANGS, translations);
-  const generation = currentGeneration();
   const existingManifest = await readManifest();
 
   if (checkOnly) {
-    await checkAssets(existingManifest, clips, generation);
+    await checkAssets(existingManifest, clips);
     return;
   }
 
   const manifest = {
-    version: 1,
-    provider: existingManifest?.provider ?? generation.provider,
-    model: existingManifest?.model ?? generation.model,
-    voice: existingManifest?.voice ?? generation.voice,
-    format: existingManifest?.format ?? generation.format,
-    instructionVersion:
-      existingManifest?.instructionVersion ?? generation.instructionVersion,
-    generationHash: existingManifest?.generationHash ?? null,
+    version: 2,
     clips:
       existingManifest?.clips && typeof existingManifest.clips === "object"
         ? existingManifest.clips
@@ -385,32 +361,25 @@ async function main() {
     const current =
       !force &&
       entry?.textSha256 === clip.textSha256 &&
-      entry?.generationHash === generation.generationHash &&
+      entry?.generationHash === generationHashFor(clip.lang) &&
       (await isValidMp3(clip.outputFile));
     if (!current) {
       clipsToGenerate.push(clip);
     }
   }
 
-  const alreadyFinal =
-    clipsToGenerate.length === 0 &&
-    !manifest.pendingGeneration &&
-    manifest.generationHash === generation.generationHash;
-  if (alreadyFinal) {
-    await checkAssets(manifest, clips, generation);
+  if (clipsToGenerate.length === 0) {
+    await checkAssets(manifest, clips);
     console.log("All narration clips are already current.");
     return;
   }
 
   const apiKey = process.env.OPENAI_API_KEY || process.env.EXPO_OPEN_API;
-  if (clipsToGenerate.length && !apiKey) {
+  if (!apiKey) {
     throw new Error(
       "OPENAI_API_KEY is required to generate narration. The existing EXPO_OPEN_API alias is also supported.",
     );
   }
-
-  manifest.pendingGeneration = generation;
-  await writeManifest(manifest);
 
   for (const clip of clipsToGenerate) {
     console.log(`Generating ${clip.key} with ${MODEL}/${VOICE}...`);
@@ -419,30 +388,27 @@ async function main() {
     manifest.clips[clip.key] = {
       file: clip.relativeFile,
       textSha256: clip.textSha256,
-      generationHash: generation.generationHash,
+      generationHash: generationHashFor(clip.lang),
+      provider: "openai",
+      model: MODEL,
+      voice: VOICE,
+      format: FORMAT,
+      instructionVersion: INSTRUCTION_VERSION,
       generatedAt: new Date().toISOString(),
     };
     await writeManifest(manifest);
   }
 
-  manifest.provider = generation.provider;
-  manifest.model = generation.model;
-  manifest.voice = generation.voice;
-  manifest.format = generation.format;
-  manifest.instructionVersion = generation.instructionVersion;
-  manifest.generationHash = generation.generationHash;
-  delete manifest.pendingGeneration;
-  await writeManifest(manifest);
-  await checkAssets(manifest, clips, generation);
+  await checkAssets(manifest, clips);
 
-  console.log(
-    clipsToGenerate.length
-      ? `Generated ${clipsToGenerate.length} narration clips.`
-      : "All narration clips are already current.",
-  );
+  console.log(`Generated ${clipsToGenerate.length} narration clips.`);
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+module.exports = { generationHashFor, instructionFor, MANEUVER_NUMBERS, LANGUAGE_NAMES };
+
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}

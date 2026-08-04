@@ -155,8 +155,9 @@ A simple, focused screen to run one VS session.
   **report** screen (which can be skipped for on-the-run practice).
 - **Audio guide** (shipped): an opt-in `audioGuideEnabled` setting, independent
   of `showGuidedSteps`, plays a bundled OpenAI-generated MP3 for each maneuver
-  via `expo-audio` (`src/features/vs/narration.ts`). There are 30 static clips:
-  6 maneuvers in each of the 5 supported languages. The OpenAI key is used only
+  via `expo-audio` (`src/features/vs/narration.ts`). There are 36 static clips:
+  6 maneuvers in each of the 6 supported languages (English, Portuguese,
+  Spanish, French, Italian, Romanian). The OpenAI key is used only
   by `scripts/generate-maneuver-audio.cjs`; it is never included in the mobile
   app or needed at runtime. `npm run audio:check --workspace vs-helper` detects
   narration that became stale after a `maneuver.*.text` translation changed.

@@ -3,7 +3,7 @@
 // Keys are shared across every language; `en` is the canonical source. Values
 // may contain {named} placeholders, filled in by `translate()` in ./index.
 
-export const SUPPORTED_LANGS = ["en", "pt", "es", "fr", "it"] as const;
+export const SUPPORTED_LANGS = ["en", "pt", "es", "fr", "it", "ro"] as const;
 export type Lang = (typeof SUPPORTED_LANGS)[number];
 
 // Human-readable, self-referential names for the language picker.
@@ -13,6 +13,7 @@ export const LANG_NAMES: Record<Lang, string> = {
   es: "Español",
   fr: "Français",
   it: "Italiano",
+  ro: "Română",
 };
 
 export type TranslationKey = keyof (typeof translations)["en"];
@@ -83,6 +84,9 @@ export const translations = {
     "settings.notifications": "Enable notifications",
     "settings.guidedSteps": "Show guided steps",
     "settings.audioGuide": "Play AI-generated narration",
+    "settings.reportSync": "Sync reports to the cloud",
+    "settings.reportSyncHint":
+      "Reports include chakras, wellbeing and notes. Off by default — enable to back them up and access them on other devices.",
     "settings.language": "Language",
     "settings.startPracticing": "Start practicing",
     "settings.save": "Save",
@@ -321,6 +325,9 @@ export const translations = {
     "settings.notifications": "Ativar notificações",
     "settings.guidedSteps": "Mostrar passos guiados",
     "settings.audioGuide": "Reproduzir narração gerada por IA",
+    "settings.reportSync": "Sincronizar relatórios com a nuvem",
+    "settings.reportSyncHint":
+      "Os relatórios incluem chakras, bem-estar e notas. Desativado por padrão — ative para fazer backup e acessá-los em outros dispositivos.",
     "settings.language": "Idioma",
     "settings.startPracticing": "Começar a praticar",
     "settings.save": "Salvar",
@@ -561,6 +568,9 @@ export const translations = {
     "settings.notifications": "Activar notificaciones",
     "settings.guidedSteps": "Mostrar pasos guiados",
     "settings.audioGuide": "Reproducir narración generada por IA",
+    "settings.reportSync": "Sincronizar informes con la nube",
+    "settings.reportSyncHint":
+      "Los informes incluyen chakras, bienestar y notas. Desactivado por defecto — actívalo para respaldarlos y acceder a ellos en otros dispositivos.",
     "settings.language": "Idioma",
     "settings.startPracticing": "Empezar a practicar",
     "settings.save": "Guardar",
@@ -803,6 +813,9 @@ export const translations = {
     "settings.notifications": "Activer les notifications",
     "settings.guidedSteps": "Afficher les étapes guidées",
     "settings.audioGuide": "Lire la narration générée par l'IA",
+    "settings.reportSync": "Synchroniser les rapports avec le cloud",
+    "settings.reportSyncHint":
+      "Les rapports incluent les chakras, le bien-être et les notes. Désactivé par défaut — activez pour les sauvegarder et y accéder sur d'autres appareils.",
     "settings.language": "Langue",
     "settings.startPracticing": "Commencer à pratiquer",
     "settings.save": "Enregistrer",
@@ -1050,6 +1063,9 @@ export const translations = {
     "settings.notifications": "Attiva le notifiche",
     "settings.guidedSteps": "Mostra i passaggi guidati",
     "settings.audioGuide": "Riproduci la narrazione generata dall'IA",
+    "settings.reportSync": "Sincronizza i report con il cloud",
+    "settings.reportSyncHint":
+      "I report includono chakra, benessere e note. Disattivato per impostazione predefinita — attivalo per eseguirne il backup e accedervi da altri dispositivi.",
     "settings.language": "Lingua",
     "settings.startPracticing": "Inizia a praticare",
     "settings.save": "Salva",
@@ -1230,5 +1246,252 @@ export const translations = {
 
     "notif.title": "Stato Vibrazionale",
     "notif.body": "È l'ora della tua pratica dello SV.",
+  },
+
+  ro: {
+    "tab.home": "Acasă",
+    "tab.progress": "Progres",
+    "tab.leaderboard": "Clasament",
+    "tab.settings": "Setări",
+    "tab.account": "Cont",
+
+    "home.title": "Starea Vibrațională",
+    "home.cta": "Fă Starea Vibrațională acum",
+    "home.today": "Astăzi",
+    "home.greeting.morning": "Bună dimineața",
+    "home.greeting.afternoon": "Bună ziua",
+    "home.greeting.evening": "Bună seara",
+    "home.greeting.night": "Noapte bună",
+    "home.greeting.morning.named": "Bună dimineața, {name}",
+    "home.greeting.afternoon.named": "Bună ziua, {name}",
+    "home.greeting.evening.named": "Bună seara, {name}",
+    "home.greeting.night.named": "Noapte bună, {name}",
+    "home.tagline.morning": "Începe-ți ziua cu o sesiune liniștită.",
+    "home.tagline.afternoon": "Un moment bun pentru o pauză conștientă.",
+    "home.tagline.evening": "Relaxează-te cu practica ta.",
+    "home.tagline.night": "Un moment de liniște înainte de odihnă.",
+    "home.practiceNow": "Fă S.V. acum",
+    "week.thisWeek": "SĂPTĂMÂNA ACEASTA",
+    "week.streak": "{days} zile consecutive",
+    "week.best": "cel mai bun {n}",
+
+    "next.caption": "Următoarea practică",
+    "next.allDone": "Gata pentru azi",
+    "next.dueNow": "Acum",
+    "next.getReady": "Pregătește-te",
+    "next.spacing": "~{min} min între sesiuni",
+    "next.minToNext": "MIN PÂNĂ LA URMĂTOAREA",
+    "next.at": "Următoarea la",
+    "today.practices": "PRACTICI",
+    "today.todayLabel": "azi",
+    "next.rowAt": "Următoarea practică la {time}",
+    "next.rowIn": "în {min} min",
+    "next.rowLeftAfter": "{n} rămase după",
+
+    "practice.start": "Start",
+    "practice.finish": "Termină acum",
+    "practice.cancel": "Anulează",
+    "practice.energyFlow": "Energia curge de la cap la picioare",
+    "practice.stepLabel": "PASUL {n} / {total}",
+    "practice.inStep": "{time} în pas",
+    "practice.finishShort": "Termină",
+    "practice.mute": "Fără sunet",
+    "practice.unmute": "Cu sunet",
+    "practice.audioError":
+      "Narațiunea nu a putut fi redată. Verifică volumul media și încearcă din nou.",
+
+    "settings.setupTitle": "Configurează-ți practica",
+    "settings.title": "Setări",
+    "settings.intro":
+      "Alege de câte ori pe zi vrei să practici și intervalul tău zilnic. Vom distribui mementourile uniform pe parcursul zilei.",
+    "settings.timesPerDay": "Ori pe zi",
+    "settings.firstTime": "Prima oră",
+    "settings.lastTime": "Ultima oră",
+    "settings.duration": "Durata sesiunii",
+    "settings.min": "min",
+    "settings.sec": "sec",
+    "settings.notifications": "Activează notificările",
+    "settings.guidedSteps": "Arată pașii ghidați",
+    "settings.audioGuide": "Redă narațiunea generată de IA",
+    "settings.reportSync": "Sincronizează rapoartele în cloud",
+    "settings.reportSyncHint":
+      "Rapoartele includ chakrele, starea de bine și notițele. Dezactivat implicit — activează pentru a le salva și accesa pe alte dispozitive.",
+    "settings.language": "Limbă",
+    "settings.startPracticing": "Începe practica",
+    "settings.save": "Salvează",
+
+    "stats.title": "Progres",
+    "stats.today": "azi",
+    "stats.totalVS": "Total SV",
+    "stats.daysActive": "Zile active",
+    "stats.currentStreak": "Serie curentă",
+    "stats.bestStreak": "Cea mai bună serie",
+    "stats.achievements": "Realizări",
+
+    "account.title": "Cont",
+    "account.blurb":
+      "Conectează-te pentru a-ți salva progresul și a-ți sincroniza sesiunile pe mai multe dispozitive. Acest lucru este opțional — practica funcționează și fără cont.",
+    "account.loginTitle": "Salvează-ți progresul",
+    "account.loginSubtitle":
+      "Conectarea îți permite ca sesiunile să conteze pe mai multe dispozitive (opțional).",
+    "account.signInWithApple": "Conectează-te cu Apple",
+    "account.signInWithGoogle": "Conectează-te cu Google",
+    "account.expoGoUnsupported":
+      "Conectarea cu Apple și Google necesită build-ul de dezvoltare; Expo Go nu poate primi redirecționări OAuth.",
+    "account.signInError": "Conectare indisponibilă: {message}",
+    "account.signOut": "Deconectează-te",
+    "account.reauthBanner":
+      "Sesiunea ta a expirat. Conectează-te din nou pentru a continua sincronizarea.",
+    "account.reauthAction": "Reconectează-te",
+
+    "leaderboard.title": "Clasament",
+    "leaderboard.intro":
+      "Participă pentru a-ți afișa totalul Stărilor Vibraționale și seria pe clasamentul global, sub un nume public. Rapoartele și detaliile personale nu părăsesc niciodată dispozitivul tău.",
+    "leaderboard.handleLabel": "Nume public",
+    "leaderboard.handlePlaceholder": "ex. cautator_energie",
+    "leaderboard.optIn": "Arată-mă în clasament",
+    "leaderboard.handleInvalid":
+      "Numele trebuie să aibă 3-20 de litere, cifre sau underscore-uri.",
+    "leaderboard.saveFailed": "Nu s-a putut salva — încearcă din nou.",
+    "leaderboard.authRequired":
+      "Te rugăm să te conectezi din nou pentru a salva modificările profilului.",
+    "leaderboard.saving": "Se salvează...",
+    "leaderboard.save": "Salvează",
+    "leaderboard.saved": "Salvat!",
+    "leaderboard.colRank": "#",
+    "leaderboard.colPlayer": "Jucător",
+    "leaderboard.colStreak": "Serie",
+    "leaderboard.colTotal": "Total",
+    "leaderboard.empty": "Nimeni nu s-a alăturat încă clasamentului.",
+    "leaderboard.loadFailed": "Clasamentul nu a putut fi încărcat momentan.",
+    "leaderboard.signInBlurb":
+      "Conectează-te pentru a te alătura clasamentului și a vedea cum se compară practica ta.",
+    "leaderboard.goToAccount": "Mergi la Cont",
+    "leaderboard.global": "Global",
+
+    "groups.myGroups": "Grupurile mele",
+    "groups.createOrJoin": "Creează sau alătură-te unui grup",
+    "groups.noGroups": "Nu te-ai alăturat încă niciunui grup.",
+    "groups.loadFailed": "Grupurile tale nu au putut fi încărcate momentan.",
+    "groups.newTitle": "Grup de campionat",
+    "groups.create": "Creează",
+    "groups.join": "Alătură-te",
+    "groups.nameLabel": "Numele grupului",
+    "groups.namePlaceholder": "ex. Cercul Energiei de Dimineață",
+    "groups.nameRequired": "Introdu un nume pentru grup.",
+    "groups.codeLabel": "Cod de invitație",
+    "groups.codePlaceholder": "ABC123",
+    "groups.codeRequired": "Introdu un cod de invitație.",
+    "groups.needsHandle":
+      "Setează mai întâi un nume public în fila Clasament.",
+    "groups.createFailed": "Grupul nu a putut fi creat — încearcă din nou.",
+    "groups.joinFailed": "Nu te-ai putut alătura grupului — încearcă din nou.",
+    "groups.notFound": "Niciun grup găsit cu acel cod.",
+    "groups.empty": "Nimeni nu a finalizat încă o sesiune.",
+    "groups.leaveConfirmTitle": "Părăsești grupul?",
+    "groups.leaveConfirmBody":
+      "Te poți alătura din nou mai târziu cu codul de invitație.",
+    "groups.leave": "Părăsește",
+    "groups.cancel": "Anulează",
+
+    "report.title": "Cum a fost?",
+    "report.chakrasActive": "Chakrele simțite ca fiind cele mai active",
+    "report.chakrasBlocked": "Chakrele simțite ca fiind blocate",
+    "report.wellbeing": "Starea de bine după",
+    "report.perceptions": "Percepții",
+    "report.notes": "Notițe",
+    "report.notesPlaceholder": "Orice ai observat (opțional)",
+    "report.save": "Salvează raportul",
+    "report.skip": "Omite",
+
+    "chakra.coronochakra": "Coroană",
+    "chakra.frontochakra": "Frunte",
+    "chakra.laryngochakra": "Gât",
+    "chakra.cardiochakra": "Inimă",
+    "chakra.umbilicochakra": "Plex solar",
+    "chakra.sexochakra": "Sacral",
+    "chakra.basochakra": "Rădăcină",
+    "chakra.palmar": "Palme",
+    "chakra.plantar": "Tălpi",
+
+    "perception.tingling": "Furnicături",
+    "perception.warmth": "Căldură",
+    "perception.cold": "Frig",
+    "perception.pressure": "Presiune",
+    "perception.expansion": "Expansiune",
+    "perception.clairvoyance": "Clarviziune",
+    "perception.sounds": "Sunete",
+    "perception.none": "Niciuna",
+
+    "maneuver.1.title": "Impulsionare",
+    "maneuver.1.text":
+      "Stai în picioare, drept, cu picioarele depărtate. Lasă brațele să atârne. Direcționează fluxul de bioenergie, prin impulsul voinței tale, de la cap în jos spre mâini și picioare.",
+    "maneuver.2.title": "Senzații",
+    "maneuver.2.text":
+      "Adu fluxul înapoi, prin voință hotărâtă, de la picioare în sus spre cap. Observă, prin senzații, direcția fluxului de jos în sus.",
+    "maneuver.3.title": "Repetiție",
+    "maneuver.3.text":
+      "Repetă fluxul de sus în jos de aproximativ 10 ori, simțind energia traversând organele corpului tău.",
+    "maneuver.4.title": "Ritm",
+    "maneuver.4.text":
+      "Crește treptat viteza sau ritmul fluxului prin forța voinței tale hotărâte.",
+    "maneuver.5.title": "Circuite",
+    "maneuver.5.text":
+      "Extinde intensitatea fluxului în circuite tot mai mari și mai puternice, în interiorul și în exteriorul corpului.",
+    "maneuver.6.title": "Instalare",
+    "maneuver.6.text":
+      "Instalează starea vibrațională: fluxul și circuitul închis se dizolvă, iar întregul tău câmp energetic devine vibrant și luminos.",
+
+    "achievement.practice-1.title": "Prima scânteie",
+    "achievement.practice-1.desc": "Finalizează prima ta Stare Vibrațională.",
+    "achievement.practice-10.title": "Prinzi avânt",
+    "achievement.practice-10.desc": "Finalizează 10 Stări Vibraționale.",
+    "achievement.practice-50.title": "Jumătate de secol",
+    "achievement.practice-50.desc": "Finalizează 50 de Stări Vibraționale.",
+    "achievement.practice-100.title": "Secol",
+    "achievement.practice-100.desc": "Finalizează 100 de Stări Vibraționale.",
+    "achievement.practice-250.title": "Radiant",
+    "achievement.practice-250.desc": "Finalizează 250 de Stări Vibraționale.",
+    "achievement.practice-500.title": "Luminos",
+    "achievement.practice-500.desc": "Finalizează 500 de Stări Vibraționale.",
+    "achievement.practice-1000.title": "Maestru Vibrațional",
+    "achievement.practice-1000.desc": "Finalizează 1000 de Stări Vibraționale.",
+    "achievement.streak-3.title": "Elan",
+    "achievement.streak-3.desc": "Atinge-ți obiectivul zilnic 3 zile la rând.",
+    "achievement.streak-7.title": "Practică constantă",
+    "achievement.streak-7.desc": "Atinge-ți obiectivul zilnic 7 zile la rând.",
+    "achievement.streak-14.title": "Flux de două săptămâni",
+    "achievement.streak-14.desc":
+      "Atinge-ți obiectivul zilnic 14 zile la rând.",
+    "achievement.streak-30.title": "De neoprit",
+    "achievement.streak-30.desc":
+      "Atinge-ți obiectivul zilnic 30 de zile la rând.",
+    "achievement.streak-60.title": "Voință de fier",
+    "achievement.streak-60.desc":
+      "Atinge-ți obiectivul zilnic 60 de zile la rând.",
+    "achievement.days-7.title": "Prima săptămână",
+    "achievement.days-7.desc": "Practică în 7 zile diferite.",
+    "achievement.days-30.title": "A doua natură",
+    "achievement.days-30.desc": "Practică în 30 de zile diferite.",
+    "achievement.days-90.title": "Experimentat",
+    "achievement.days-90.desc": "Practică în 90 de zile diferite.",
+    "achievement.days-180.title": "Devotat de jumătate de an",
+    "achievement.days-180.desc": "Practică în 180 de zile diferite.",
+    "achievement.days-365.title": "Cerc complet",
+    "achievement.days-365.desc": "Practică în 365 de zile diferite.",
+
+    "achievements.category.practice": "Practică",
+    "achievements.category.streak": "Serie",
+    "achievements.category.consistency": "Consistență",
+    "achievements.tier.bronze": "Bronz",
+    "achievements.tier.silver": "Argint",
+    "achievements.tier.gold": "Aur",
+    "achievements.tier.platinum": "Platină",
+    "achievements.unlockedOn": "Deblocat pe {date}",
+    "achievements.unlocked": "Realizare deblocată",
+    "achievements.nice": "Bravo!",
+
+    "notif.title": "Starea Vibrațională",
+    "notif.body": "E timpul pentru practica ta S.V.",
   },
 } as const;
