@@ -1,5 +1,9 @@
 # Architecture
 
+This diagram describes the VS Helper consumer. The reusable auth source now
+lives in [`aws-cognito-template/`](../aws-cognito-template/README.md), independent
+of the app and its backend.
+
 ## Component Diagram
 
 ```
@@ -83,7 +87,7 @@ App                  System Browser       Cognito Hosted UI    Apple / Google
 | Access Token (JWT) | 1 hour  | `expo-secure-store` | Call protected APIs                  |
 | Refresh Token      | 30 days | `expo-secure-store` | Renew ID + Access tokens             |
 
-Call `refreshAccessToken()` from `src/lib/auth.ts` before the Access Token expires.
+Call the template's `refreshAccessToken()` before the Access Token expires.
 
 ## Redirect URI by Environment
 

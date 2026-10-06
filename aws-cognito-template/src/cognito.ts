@@ -15,7 +15,7 @@ import * as AuthSession from "expo-auth-session";
  */
 export const issuer = process.env.EXPO_PUBLIC_COGNITO_ISSUER ?? "";
 const clientId = process.env.EXPO_PUBLIC_USER_POOL_CLIENT_ID ?? "";
-const scheme = process.env.EXPO_PUBLIC_APP_SCHEME ?? "vshelper";
+const scheme = process.env.EXPO_PUBLIC_APP_SCHEME ?? "cognitoapp";
 
 export const cognitoIdentityProviders = {
   google: "Google",
@@ -53,7 +53,7 @@ export function getDiscovery(): Promise<AuthSession.DiscoveryDocument> {
 // makeRedirectUri resolves to:
 //  - Expo Go (simulator): exp://localhost:8081
 //  - Expo Go (device):    exp://<local-ip>:8081
-//  - Standalone build:    vshelper://callback
+//  - Development / standalone build: <app-scheme>://callback
 export function getRedirectUri() {
   return AuthSession.makeRedirectUri({
     scheme,

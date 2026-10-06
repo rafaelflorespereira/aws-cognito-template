@@ -98,7 +98,7 @@ Note the `ApiUrl` output — that's the base URL the app will call.
 # Should be 401 (no token):
 curl -i https://<api-id>.execute-api.<region>.amazonaws.com/stats
 
-# With a real ID token from the app (see packages/auth getStoredTokens()):
+# With a real ID token from the app (see aws-cognito-template getStoredTokens()):
 curl -i https://<api-id>.execute-api.<region>.amazonaws.com/stats \
   -H "Authorization: Bearer <idToken>"
 ```

@@ -10,7 +10,7 @@ import {
   leaveGroupResult,
   type SyncError,
 } from "./sync";
-import { getStoredTokens } from "@vs/auth";
+import { getStoredTokens } from "@aws-cognito-template/auth";
 
 function getSyncError(err: unknown, path: string): SyncError {
   if (

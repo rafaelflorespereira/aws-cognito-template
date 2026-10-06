@@ -64,8 +64,15 @@ session is:
 This is an npm-workspaces monorepo. Dependencies are hoisted to the root
 `node_modules`, so always run `npm install` from the repository root.
 
+The reusable authentication template is isolated in
+[`aws-cognito-template/`](aws-cognito-template/README.md). It can be copied into
+another repository independently; VS Helper consumes its public package API.
+See its [AWS setup](aws-cognito-template/docs/aws-setup.md) and
+[new-project integration](aws-cognito-template/docs/integration.md) guides.
+
 ```
 aws-cognito-template/
+├── aws-cognito-template/        # Standalone @aws-cognito-template/auth + setup guides
 ├── apps/
 │   └── vs-helper/               # The Expo app
 │       ├── app/                 # expo-router screens
@@ -77,7 +84,6 @@ aws-cognito-template/
 │           ├── components/      #   UI (ProgressRing, WeekCard, PracticeStep…)
 │           └── features/i18n/   #   translations
 ├── packages/
-│   ├── auth/                    # @vs/auth — Cognito Apple/Google SSO (shared)
 │   └── vs-shared/               # @vs/shared — types + stats logic shared with backend
 ├── infra/
 │   └── vs-helper-backend/       # AWS CDK: optional cloud-sync + leaderboard API
@@ -151,6 +157,7 @@ npm run audio:check --workspace vs-helper
 - [Cloud-sync backend (AWS CDK)](docs/vs-helper-backend.md)
 - [Auth architecture](docs/architecture.md)
 - [Cognito + Apple/Google SSO setup & deployment](docs/deployment.md)
+- [Reusable authentication template](aws-cognito-template/README.md)
 
 ## License
 

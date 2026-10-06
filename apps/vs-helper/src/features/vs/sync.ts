@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getStoredTokens, refreshAccessToken } from "@vs/auth";
+import { getStoredTokens, refreshAccessToken } from "@aws-cognito-template/auth";
 import type {
   Group,
   LeaderboardEntry,

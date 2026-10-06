@@ -168,7 +168,7 @@ export class VsHelperBackendStack extends cdk.Stack {
     reportsTable.grantReadData(getReportsFn);
     reportsTable.grantReadWriteData(postReportFn);
 
-    // The RN app already holds a Cognito ID token (packages/auth); this
+    // The RN app already holds a Cognito ID token (aws-cognito-template); this
     // authorizer verifies it directly — no separate Lambda authorizer needed.
     const authorizer = new HttpJwtAuthorizer(
       "CognitoAuthorizer",

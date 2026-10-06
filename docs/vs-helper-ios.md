@@ -6,7 +6,7 @@ For the one-time provider setup see [`deployment.md`](deployment.md).
 
 > This is a **monorepo** (npm workspaces). Dependencies are hoisted to the root
 > `node_modules`, and Metro is configured to watch the workspace root so it can
-> resolve the shared `@vs/auth` and `@vs/shared` packages. Always install from
+> resolve the shared `@aws-cognito-template/auth` and `@vs/shared` packages. Always install from
 > the **repo root**.
 
 ## Prerequisites
@@ -25,12 +25,12 @@ npm install
 ```
 
 This installs and hoists dependencies for every workspace, including
-`apps/vs-helper` and `packages/auth`. Running `npm install` inside the app
+`apps/vs-helper` and `aws-cognito-template`. Running `npm install` inside the app
 folder is not enough in a workspace setup.
 
 ## 2. Create the app's `.env`
 
-Environment variables live in the **consuming app**, not in `packages/auth`.
+Environment variables live in the **consuming app**, not in `aws-cognito-template`.
 Metro only inlines the `.env` from the project root of the app you run.
 
 ```bash
@@ -95,9 +95,9 @@ same custom scheme.
 | Symptom                                    | Fix                                                                                              |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | **App stuck "loading" forever in Expo Go** | Dependencies not installed — run `npm install` from the **repo root** (not the app folder).      |
-| Metro can't resolve `@vs/auth`             | Start from the repo root so Metro watches the workspace; confirm `metro.config.js` is unchanged. |
+| Metro can't resolve `@aws-cognito-template/auth` | Start from the repo root so Metro watches the workspace; confirm `metro.config.js` is unchanged. |
 | Physical iPhone can't reach the dev server | Same Wi‑Fi; try `npm run vs:dev:tunnel` if on a restricted network.                             |
-| Env vars are `undefined` at runtime        | `.env` must be in `apps/vs-helper/`, not `packages/auth/`. Restart Metro after editing `.env`.   |
+| Env vars are `undefined` at runtime        | `.env` must be in `apps/vs-helper/`, not `aws-cognito-template/`. Restart Metro after editing `.env`. |
 | Sign-in buttons are disabled in Expo Go    | Install the development build and start it with `npm run vs:dev`.                                |
 | `redirect_uri` error on the login page     | Cognito must allow the exact callback `vshelper://callback`.                                     |
 | Changes to `.env` not picked up            | Stop Metro and restart with a cleared cache: `npx expo start -c`.                                |

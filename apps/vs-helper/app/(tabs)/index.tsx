@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { getStoredTokens, parseIdToken } from "@vs/auth";
+import { getStoredTokens, parseIdToken } from "@aws-cognito-template/auth";
 import { useSchedule } from "@/features/vs/useSchedule";
 import { loadHistory, todayStr } from "@/features/vs/storage";
 import { sessionCountsByDate } from "@/features/vs/schedule";

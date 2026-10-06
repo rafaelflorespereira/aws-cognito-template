@@ -8,7 +8,7 @@ import {
   pushProfileResult,
   type SyncError,
 } from "./sync";
-import { getStoredTokens, parseIdToken } from "@vs/auth";
+import { getStoredTokens, parseIdToken } from "@aws-cognito-template/auth";
 
 const DEFAULT_PROFILE: UserProfile = { handle: "", leaderboardOptIn: false };
 

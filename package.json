@@ -1,8 +1,9 @@
 {
-  "name": "aws-cognito-template",
+  "name": "vibrational-state",
   "private": true,
   "version": "1.0.0",
   "workspaces": [
+    "aws-cognito-template",
     "packages/*",
     "apps/*",
     "infra/*"

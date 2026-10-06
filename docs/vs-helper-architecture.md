@@ -6,7 +6,7 @@
 > covers the VS-specific product.
 >
 > **Scoping:** the VS helper is its **own app** (`apps/vs-helper`). Its auth logic is
-> extracted into a shared workspace package (`packages/auth`, `@vs/auth`) that the
+> extracted into an independent template (`aws-cognito-template`, `@aws-cognito-template/auth`) that the
 > VS app consumes. See [§7 Monorepo Structure](#7-monorepo-structure).
 >
 > **Running it:** to serve the app on iOS (Simulator or a physical iPhone via
@@ -78,11 +78,11 @@ the ideal companion. The app helps the user:
 │  │   - notifications.ts → schedule/cancel local notifs     │  │
 │  │   - useSchedule.ts → React hook (state + actions)       │  │
 │  │                                                         │  │
-│  │  @vs/auth (packages/auth — shared library)              │  │
+│  │  Cognito template (independent shared library)           │  │
 │  │   - Cognito Apple/Google SSO → tokens in SecureStore    │  │
 │  │                                                         │  │
 │  │  Storage                                                │  │
-│  │   - expo-secure-store → auth tokens (via @vs/auth)      │  │
+│  │   - expo-secure-store → auth tokens (via template)       │  │
 │  │   - AsyncStorage      → VS settings + progress          │  │
 │  │  expo-notifications → local scheduled reminders         │  │
 │  └─────────────────────────────────────────────────────────┘  │
@@ -384,24 +384,24 @@ export function useSchedule(): {
 
 ## 7. Monorepo Structure
 
-The repo is a **workspace** (npm/pnpm workspaces). Auth is extracted into a shared
+The repo is a **workspace** (npm workspaces). Auth is extracted into an independent
 package; the VS helper is a separate app.
 
 ```
 aws-cognito-template/            # workspace root
-├── package.json                 # workspaces: ["packages/*", "apps/*", "infra/*"]
-├── packages/
-│   └── auth/                    # shared Cognito Apple/Google SSO library (@vs/auth)
-│       ├── package.json         # name: "@vs/auth"
-│       └── src/
-│           ├── cognito.ts       # discovery doc + redirect URI
-│           ├── auth.ts          # token exchange, storage, parsing
-│           ├── LoginButton.tsx
-│           ├── UserProfile.tsx
-│           └── index.ts         # public API surface
+├── package.json                 # template, packages/*, apps/*, infra/* workspaces
+├── aws-cognito-template/        # independent Cognito Apple/Google SSO library
+│   ├── package.json             # name: "@aws-cognito-template/auth"
+│   ├── docs/                    # AWS setup and new-project integration
+│   └── src/
+│       ├── cognito.ts           # discovery doc + redirect URI
+│       ├── auth.ts              # token exchange, storage, parsing
+│       ├── LoginButton.tsx
+│       ├── UserProfile.tsx
+│       └── index.ts             # public API surface
 └── apps/
     └── vs-helper/               # the Vibrational State app (Expo)
-        ├── package.json         # depends on "@vs/auth"
+        ├── package.json         # depends on "@aws-cognito-template/auth"
         ├── app.json             # own scheme, bundle id
         ├── app/
         │   ├── _layout.tsx       # first-run gate; login optional
@@ -431,9 +431,9 @@ aws-cognito-template/            # workspace root
 
 **Boundaries**
 
-- `packages/auth` owns everything Cognito/SSO and exposes a small public API
+- `aws-cognito-template` owns everything Cognito/SSO and exposes a small public API
   (`getStoredTokens`, `exchangeCodeForTokens`, `LoginButton`, `UserProfile`, …).
-- `apps/vs-helper` owns all VS logic and imports auth **only** through `@vs/auth`;
+- `apps/vs-helper` owns all VS logic and imports auth **only** through `@aws-cognito-template/auth`;
   it never reaches into auth internals.
 
 ## 8. New Dependencies
@@ -444,7 +444,7 @@ aws-cognito-template/            # workspace root
 | `@react-native-async-storage/async-storage` | Persist settings & progress |
 
 Both are Expo-compatible and installed via `npx expo install` **inside
-`apps/vs-helper`**. The repo uses **npm/pnpm workspaces**; `@vs/auth` is a local
+`apps/vs-helper`**. The repo uses **npm workspaces**; `@aws-cognito-template/auth` is a local
 workspace package the VS app depends on (no publishing required).
 
 ## 9. Auth Integration (optional login)
@@ -455,7 +455,7 @@ workspace package the VS app depends on (no publishing required).
   reports with the user, so they can be counted toward history/streaks and, in
   Phase 2, synced across devices (keyed by the Cognito identity — email/name/picture
   from the ID token).
-- Auth ships as the shared **`@vs/auth`** package. The VS
+- Auth ships as the independent **`@aws-cognito-template/auth`** package. The VS
   app imports its public API (e.g. `getStoredTokens`, `LoginButton`) — the Cognito +
   Apple/Google SSO flow itself is reused and simply no longer gates access.
   A non-intrusive “Sign in to save your progress” prompt surfaces on the dashboard
@@ -486,7 +486,7 @@ with Apple's native button on iOS.
 | Standalone / EAS build  | `vshelper://callback`     |
 | Expo Go                 | OAuth/OIDC not supported  |
 
-`makeRedirectUri()` in `@vs/auth` resolves the custom scheme at runtime. Use the
+`makeRedirectUri()` in `@aws-cognito-template/auth` resolves the custom scheme at runtime. Use the
 development build for local OAuth testing; Expo Go cannot receive the redirect.
 
 **Notes**

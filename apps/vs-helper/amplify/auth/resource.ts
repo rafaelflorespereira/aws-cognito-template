@@ -2,7 +2,7 @@ import { referenceAuth } from "@aws-amplify/backend";
 
 /**
  * Bring-your-own Cognito: this app already has a user pool + hosted UI managed
- * outside Amplify (see packages/auth). `referenceAuth` points the Amplify
+ * outside Amplify (see aws-cognito-template). `referenceAuth` points the Amplify
  * backend at that existing pool instead of creating a new one, so AppSync (the
  * Data API below) trusts the same JWTs your app already issues.
  *

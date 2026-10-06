@@ -7,7 +7,7 @@ import type { APIGatewayProxyEventV2WithJWTAuthorizer } from "aws-lambda";
 // We key every table by `email` rather than `sub` so that the same person is
 // recognised as a single user regardless of which social IDP they sign in with
 // (e.g. Google vs Apple). Cognito always includes the email in the ID token
-// when the `email` scope is requested (see packages/auth/src/cognito.ts).
+// when the `email` scope is requested (see aws-cognito-template/src/cognito.ts).
 export function requireUserId(
   event: APIGatewayProxyEventV2WithJWTAuthorizer,
 ): string {

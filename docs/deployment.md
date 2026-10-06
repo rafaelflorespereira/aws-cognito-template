@@ -1,5 +1,10 @@
 # Setup & Deployment Guide
 
+This guide configures **VS Helper** specifically. For the standalone template
+and a new project's identifiers, use
+[AWS setup](../aws-cognito-template/docs/aws-setup.md) and
+[new-project integration](../aws-cognito-template/docs/integration.md).
+
 End-to-end steps to create the Cognito User Pool, wire up Sign in with Apple and
 Google SSO, and ship the Expo app. Follow them in order.
 

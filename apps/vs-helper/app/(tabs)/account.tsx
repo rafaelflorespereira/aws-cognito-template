@@ -27,7 +27,7 @@ import {
   LoginButton,
   type CognitoIdentityProvider,
   type AuthUser,
-} from "@vs/auth";
+} from "@aws-cognito-template/auth";
 import { useI18n } from "@/features/i18n";
 import {
   syncReportsNow,

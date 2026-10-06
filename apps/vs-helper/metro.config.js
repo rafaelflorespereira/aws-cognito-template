@@ -1,5 +1,5 @@
 // Metro config for the monorepo: watch the workspace root so Metro can resolve
-// the shared @vs/auth package, and look up modules in both the app's and the
+// the shared @aws-cognito-template/auth package, and look up modules in both the app's and the
 // root's node_modules (npm workspaces hoist most deps to the root).
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
